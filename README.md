@@ -1,10 +1,16 @@
-# Next.js & NextUI Template
+# smoll.host
+host your smol website with ease
 
-This is a template for creating applications using Next.js 14 (app directory) and NextUI (v2).
+> [!NOTE]  
+> The hosted content is currently displayed through a subdomain of [pritish.in](https://pritish.in). This is achieved using a reverse proxy written in Go, available at [this GitHub repo](https://github.com/PritishMishraa/go-reverse-proxy).
 
 ## Technologies Used
 
 - [Next.js 14](https://nextjs.org/docs/getting-started)
+- [AWS S3](https://aws.amazon.com/s3/)
+- [Upstash Redis](https://upstash.com/)
+- [React Dropzone](https://react-dropzone.js.org/)
+- [Sonner](https://sonner.emilkowal.ski/)
 - [NextUI v2](https://nextui.org/)
 - [Tailwind CSS](https://tailwindcss.com/)
 - [Tailwind Variants](https://tailwind-variants.org)
@@ -12,28 +18,29 @@ This is a template for creating applications using Next.js 14 (app directory) an
 - [Framer Motion](https://www.framer.com/motion/)
 - [next-themes](https://github.com/pacocoursey/next-themes)
 
+
+## How Files are uploaded
+![file upload](image.png)
+
 ## How to Use
 
-### Use the template with create-next-app
-
-To create a new project based on this template using `create-next-app`, run the following command:
+### CLone the repository
 
 ```bash
-npx create-next-app -e https://github.com/nextui-org/next-app-template
+git clone https://github.com/PritishMishraa/smoll-host.git
 ```
 
 ### Install dependencies
 
-You can use one of them `npm`, `yarn`, `pnpm`, `bun`, Example using `npm`:
 
 ```bash
-npm install
+pnpm install
 ```
 
 ### Run the development server
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 ### Setup pnpm (optional)
