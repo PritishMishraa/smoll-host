@@ -190,7 +190,7 @@ export function FileUploader(props: FileUploaderProps) {
                             <div className="flex flex-col items-center justify-center gap-4 sm:px-5">
                                 <div className="rounded-full border border-dashed p-3">
                                     <UploadIcon
-                                        className="size-7 text-muted-foreground"
+                                        className="size-9 text-muted-foreground transition-transform"
                                         aria-hidden="true"
                                     />
                                 </div>
@@ -202,7 +202,7 @@ export function FileUploader(props: FileUploaderProps) {
                             <div className="flex flex-col items-center justify-center gap-4 sm:px-5">
                                 <div className="rounded-full border border-dashed p-3">
                                     <UploadIcon
-                                        className="size-7 text-muted-foreground"
+                                        className={cn("size-7 text-muted-foreground", isDisabled && "text-success")}
                                         aria-hidden="true"
                                     />
                                 </div>

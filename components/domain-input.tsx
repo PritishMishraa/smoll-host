@@ -36,7 +36,7 @@ export default function DomainName() {
                 setLoading(true);
                 const uploadPromise = new Promise<void>(async (resolve, reject) => {
                     try {
-                        const signedUrl = await getSignedURL(domainValue.trim());
+                        const signedUrl = await getSignedURL(domainValue.toLowerCase().trim());
                         const url = signedUrl.success.url;
                         await fetch(url, {
                             method: "PUT",
@@ -45,7 +45,7 @@ export default function DomainName() {
                                 "Content-Type": "text/html",
                             },
                         });
-                        await redis.set(domainValue, 'pritishmishra579@gmail.com');
+                        await redis.set(domainValue.toLowerCase().trim(), 'pritishmishra579@gmail.com');
                         resolve();
                     } catch (error) {
                         reject(error);
@@ -57,6 +57,9 @@ export default function DomainName() {
                     {
                         loading: 'Uploading file...',
                         success: () => {
+                            setTimeout(() => {
+                                openInNewTab(`https://${(domainValue.toLowerCase().trim())}.pritish.in`);
+                            }, 2000);
                             setDomainValue('');
                             setFileValue([]);
                             return 'File uploaded successfully!';
@@ -80,6 +83,8 @@ export default function DomainName() {
                 label="Domain Name"
                 labelPlacement='outside'
                 placeholder="Enter your domain name"
+                startContent="https://"
+                endContent=".pritish.in"
                 variant='faded'
                 value={domainValue}
                 onValueChange={handleValueChange}
@@ -95,7 +100,7 @@ export default function DomainName() {
                     maxFiles={1}
                 />
             </div>
-            <Button isLoading={loading} className='w-full max-w-sm' color='secondary' type='submit'>HOST IT!</Button>
+            <Button isLoading={loading} isDisabled={loading} className='w-full max-w-sm' color='secondary' type='submit'>HOST IT!</Button>
         </form>
     )
 }
