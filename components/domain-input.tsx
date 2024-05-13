@@ -5,10 +5,9 @@ import { Input } from '@nextui-org/input'
 import React from 'react'
 import { FileUploader } from './file-uploader';
 import { Button } from '@nextui-org/button';
-import { checkDomain, getSignedURL } from './actions';
+import { checkDomain, getSignedURL, setDomain } from './actions';
 var debounce = require('lodash.debounce');
 import { toast } from "sonner"
-import { redis } from '@/lib/redis';
 
 const openInNewTab = (url: string) => {
     window.open(url, '_blank', 'noopener,noreferrer');
@@ -45,7 +44,7 @@ export default function DomainName() {
                                 "Content-Type": "text/html",
                             },
                         });
-                        await redis.set(domainValue.toLowerCase().trim(), 'pritishmishra579@gmail.com');
+                        setDomain(domainValue.toLowerCase().trim(), 'pritishmishra579@gmail.com');
                         resolve();
                     } catch (error) {
                         reject(error);

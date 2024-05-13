@@ -31,3 +31,7 @@ export async function checkDomain(value: string) {
         return true;
     }
 }
+
+export async function setDomain(value: string, email: string) {
+    await redis.set(value, email);
+}
