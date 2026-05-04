@@ -1,37 +1,42 @@
 "use server";
 
-import { redis } from "@/lib/redis";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3"
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner"
+import { headers } from "next/headers";
 
-const s3 = new S3Client({
-    region: process.env.AWS_REGION!,
-    credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-    },
-})
-
-export async function getSignedURL(domainValue: string) {
-    const putObjectCommand = new PutObjectCommand({
-        Bucket: process.env.AWS_BUCKET_NAME!,
-        Key: `${domainValue}/index.html`,
-    })
-
-    const signedUrl = await getSignedUrl(s3, putObjectCommand, { expiresIn: 3600 })
-
-    return { success: { url: signedUrl } }
-}
+import {
+	createDomainForUser,
+	deleteDomainForUser,
+	isDomainAvailable,
+	listDomainsForUser,
+} from "@/lib/domains";
+import { auth } from "@/lib/auth";
 
 export async function checkDomain(value: string) {
-    const domainExists = await redis.get(value);
-    if (domainExists) {
-        return false;
-    } else {
-        return true;
-    }
+	return isDomainAvailable(value);
 }
 
-export async function setDomain(value: string, email: string) {
-    await redis.set(value, email);
+export async function createDomain(value: string) {
+	const userId = await requireUserId();
+	return createDomainForUser(value, userId);
+}
+
+export async function listDomains() {
+	const userId = await requireUserId();
+	return listDomainsForUser(userId);
+}
+
+export async function deleteDomain(value: string) {
+	const userId = await requireUserId();
+	await deleteDomainForUser(value, userId);
+}
+
+async function requireUserId() {
+	const session = await auth.api.getSession({
+		headers: headers(),
+	});
+
+	if (!session?.user?.id) {
+		throw new Error("You must sign in before continuing");
+	}
+
+	return session.user.id;
 }
