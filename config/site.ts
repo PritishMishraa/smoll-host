@@ -1,69 +1,41 @@
-export type SiteConfig = typeof siteConfig;
+type NavItem = {
+	label: string;
+	href: string;
+};
 
-export const siteConfig = {
-	name: "Next.js + NextUI",
-	description: "Make beautiful websites regardless of your design experience.",
-	navItems: [
-		{
-			label: "Home",
-			href: "/",
-		},
-    {
-      label: "Docs",
-      href: "/docs",
-    },
-    {
-      label: "Pricing",
-      href: "/pricing",
-    },
-    {
-      label: "Blog",
-      href: "/blog",
-    },
-    {
-      label: "About",
-      href: "/about",
-    }
-	],
+export type SiteConfig = {
+	name: string;
+	description: string;
+	navItems: NavItem[];
+	navMenuItems: NavItem[];
+	links: {
+		github: string;
+		docs: string;
+		sponsor: string;
+	};
+};
+
+export const siteConfig: SiteConfig = {
+	name: "smoll.host",
+	description: "Host small static sites on pritish.in subdomains.",
+	navItems: [],
 	navMenuItems: [
 		{
-			label: "Profile",
-			href: "/profile",
-		},
-		{
-			label: "Dashboard",
-			href: "/dashboard",
-		},
-		{
 			label: "Projects",
-			href: "/projects",
+			href: "/",
 		},
 		{
-			label: "Team",
-			href: "/team",
+			label: "GitHub",
+			href: "https://github.com/PritishMishraa/smoll-host",
 		},
 		{
-			label: "Calendar",
-			href: "/calendar",
-		},
-		{
-			label: "Settings",
-			href: "/settings",
-		},
-		{
-			label: "Help & Feedback",
-			href: "/help-feedback",
-		},
-		{
-			label: "Logout",
-			href: "/logout",
+			label: "Docs",
+			href: "https://github.com/PritishMishraa/smoll-host#readme",
 		},
 	],
 	links: {
 		github: "https://github.com/PritishMishraa/smoll-host",
-		twitter: "https://twitter.com/getnextui",
-		docs: "https://nextui.org",
-		discord: "https://discord.gg/9b6yyZKmH4",
-    sponsor: "https://patreon.com/jrgarciadev"
+		docs: "https://github.com/PritishMishraa/smoll-host#readme",
+		sponsor: "https://github.com/sponsors/PritishMishraa",
 	},
 };

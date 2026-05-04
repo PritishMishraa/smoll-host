@@ -87,6 +87,13 @@ interface FileUploaderProps extends React.HTMLAttributes<HTMLDivElement> {
      * @example disabled
      */
     disabled?: boolean
+
+    /**
+     * Text shown when the uploader is disabled.
+     * @type string
+     * @default "File Uploaded"
+     */
+    disabledLabel?: string
 }
 
 export function FileUploader(props: FileUploaderProps) {
@@ -102,6 +109,7 @@ export function FileUploader(props: FileUploaderProps) {
         maxFiles = 1,
         multiple = false,
         disabled = false,
+        disabledLabel = "File Uploaded",
         className,
         ...dropzoneProps
     } = props
@@ -209,7 +217,7 @@ export function FileUploader(props: FileUploaderProps) {
                                 <div className="space-y-px">
                                     {isDisabled ?
                                         <p className="font-medium text-muted-foreground">
-                                            File Uploaded
+                                            {disabledLabel}
                                         </p>
                                         :
                                         <>

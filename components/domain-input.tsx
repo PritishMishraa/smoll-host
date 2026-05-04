@@ -5,46 +5,87 @@ import { Input } from '@nextui-org/input'
 import React from 'react'
 import { FileUploader } from './file-uploader';
 import { Button } from '@nextui-org/button';
-import { checkDomain, getSignedURL, setDomain } from './actions';
-var debounce = require('lodash.debounce');
+import { checkDomain } from './actions';
 import { toast } from "sonner"
+import { authClient } from '@/lib/auth-client';
+import { DomainDashboard } from './domain-dashboard';
 
 const openInNewTab = (url: string) => {
     window.open(url, '_blank', 'noopener,noreferrer');
 };
 
 export default function DomainName() {
+    const { data: session, isPending } = authClient.useSession();
+    const isSignedIn = Boolean(session?.user);
     const [domainValue, setDomainValue] = React.useState('')
     const [isInvalid, setIsInvalid] = React.useState(false);
     const [fileValue, setFileValue] = React.useState<File[]>([]);
     const [loading, setLoading] = React.useState(false);
+    const [refreshKey, setRefreshKey] = React.useState(0);
+    const domainCheckTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+    const domainCheckSequence = React.useRef(0);
 
-    const debouncedCheckDomain = debounce(async (value: string) => {
-        const isValid = await checkDomain(value.trim());
-        setIsInvalid(!isValid);
-    }, 100)
+    const debouncedCheckDomain = React.useCallback((value: string) => {
+        if (domainCheckTimeout.current) {
+            clearTimeout(domainCheckTimeout.current);
+        }
+
+        const sequence = domainCheckSequence.current + 1;
+        domainCheckSequence.current = sequence;
+
+        domainCheckTimeout.current = setTimeout(async () => {
+            const isValid = await checkDomain(value.trim());
+
+            if (domainCheckSequence.current === sequence) {
+                setIsInvalid(!isValid);
+            }
+        }, 100);
+    }, []);
+
+    React.useEffect(() => {
+        return () => {
+            if (domainCheckTimeout.current) {
+                clearTimeout(domainCheckTimeout.current);
+            }
+        };
+    }, []);
 
     const handleValueChange = (newValue: string) => {
+        if (!isSignedIn) {
+            return;
+        }
+
         setDomainValue(newValue);
         debouncedCheckDomain(newValue);
     };
 
     const handleUpload = async () => {
-        if (domainValue && !isInvalid && fileValue.length > 0) {
+        if (!isSignedIn) {
+            await authClient.signIn.social({ provider: "github" });
+            return;
+        }
+
+        if (domainValue && !isInvalid) {
             try {
                 setLoading(true);
                 const uploadPromise = new Promise<void>(async (resolve, reject) => {
                     try {
-                        const signedUrl = await getSignedURL(domainValue.toLowerCase().trim());
-                        const url = signedUrl.success.url;
-                        await fetch(url, {
-                            method: "PUT",
-                            body: fileValue[0],
-                            headers: {
-                                "Content-Type": "text/html",
-                            },
+                        const formData = new FormData();
+                        formData.set("domain", domainValue.toLowerCase().trim());
+                        if (fileValue[0]) {
+                            formData.set("file", fileValue[0]);
+                        }
+
+                        const response = await fetch("/api/domains", {
+                            method: "POST",
+                            body: formData,
                         });
-                        setDomain(domainValue.toLowerCase().trim(), 'pritishmishra579@gmail.com');
+
+                        if (!response.ok) {
+                            const payload = await response.json().catch(() => null);
+                            throw new Error(payload?.error ?? "Failed to create domain");
+                        }
+
                         resolve();
                     } catch (error) {
                         reject(error);
@@ -56,12 +97,17 @@ export default function DomainName() {
                     {
                         loading: 'Uploading file...',
                         success: () => {
-                            setTimeout(() => {
-                                openInNewTab(`https://${(domainValue.toLowerCase().trim())}.pritish.in`);
-                            }, 2000);
+                            if (fileValue.length > 0) {
+                                setTimeout(() => {
+                                    openInNewTab(`https://${(domainValue.toLowerCase().trim())}.pritish.in`);
+                                }, 2000);
+                            }
                             setDomainValue('');
                             setFileValue([]);
-                            return 'File uploaded successfully!';
+                            setRefreshKey((value) => value + 1);
+                            return fileValue.length > 0
+                                ? 'Domain created and file uploaded!'
+                                : 'Domain created!';
                         },
                         error: (error) => `Error uploading files: ${error.message}`,
                     }
@@ -72,34 +118,60 @@ export default function DomainName() {
                 setLoading(false);
             }
         } else {
-            toast.error("Please enter a valid domain name and upload a file!");
+            toast.error("Please enter a valid domain name!");
         }
     };
 
     return (
-        <form className='w-full flex flex-col gap-4 items-center' onSubmit={(e) => { e.preventDefault(); handleUpload(); }}>
-            <Input
-                label="Domain Name"
-                labelPlacement='outside'
-                placeholder="Enter your domain name"
-                startContent="https://"
-                endContent=".pritish.in"
-                variant='faded'
-                value={domainValue}
-                onValueChange={handleValueChange}
-                errorMessage={isInvalid && "Domain is already taken!"}
-                isInvalid={isInvalid}
-                color={domainValue && !isInvalid ? 'success' : 'default'}
-            />
-            <div className="w-full">
-                <FileUploader
-                    value={fileValue}
-                    onValueChange={setFileValue}
-                    maxSize={16 * 1024 * 1024}
-                    maxFiles={1}
+        <div className='w-full'>
+            <form className='w-full flex flex-col gap-4 items-center' onSubmit={(e) => { e.preventDefault(); handleUpload(); }}>
+                <Input
+                    label="Domain Name"
+                    labelPlacement='outside'
+                    placeholder="Enter your domain name"
+                    startContent="https://"
+                    endContent=".pritish.in"
+                    variant='faded'
+                    value={domainValue}
+                    onValueChange={handleValueChange}
+                    errorMessage={isInvalid && "Domain is already taken!"}
+                    isInvalid={isInvalid}
+                    color={domainValue && !isInvalid ? 'success' : 'default'}
+                    isDisabled={!isSignedIn || isPending}
                 />
-            </div>
-            <Button isLoading={loading} isDisabled={loading} className='w-full max-w-sm' color='secondary' type='submit'>HOST IT!</Button>
-        </form>
+                <p className="w-full text-xs text-default-500">
+                    Domain names are permanent. Delete this domain and create a new one if you need a different name.
+                </p>
+                <div className="w-full">
+                    <FileUploader
+                        value={fileValue}
+                        onValueChange={setFileValue}
+                        maxSize={16 * 1024 * 1024}
+                        maxFiles={1}
+                        disabled={!isSignedIn || isPending}
+                        disabledLabel={isSignedIn ? "File Uploaded" : "Sign in to upload HTML"}
+                    />
+                </div>
+                <Button
+                    isLoading={loading || isPending}
+                    isDisabled={loading || isPending}
+                    className='w-full max-w-sm'
+                    color='secondary'
+                    type='submit'
+                >
+                    {isSignedIn ? "Create domain" : "Sign in to create a domain"}
+                </Button>
+                {!isSignedIn && !isPending && (
+                    <Button
+                        className='w-full max-w-sm'
+                        variant='flat'
+                        onPress={() => authClient.signIn.social({ provider: "github" })}
+                    >
+                        Sign in with GitHub
+                    </Button>
+                )}
+            </form>
+            <DomainDashboard refreshKey={refreshKey} />
+        </div>
     )
 }

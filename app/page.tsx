@@ -1,9 +1,6 @@
-import { Link } from "@nextui-org/link";
-import { button as buttonStyles } from "@nextui-org/theme";
-import { siteConfig } from "@/config/site";
 import { title, subtitle } from "@/components/primitives";
-import { SignInIcon } from "@/components/icons";
 import DomainName from "@/components/domain-input";
+import { AuthButton } from "@/components/auth-button";
 
 export default function Home() {
 	return (
@@ -16,14 +13,7 @@ export default function Home() {
 				</h2>
 			</div>
 
-			<Link
-				isExternal
-				className={buttonStyles({ variant: "bordered", radius: "full" })}
-				href={siteConfig.links.github}
-			>
-				<SignInIcon size={20} />
-				GitHub
-			</Link>
+			<AuthButton />
 
 			<DomainName/>
 
