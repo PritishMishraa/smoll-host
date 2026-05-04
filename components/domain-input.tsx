@@ -9,6 +9,7 @@ import { checkDomain } from './actions';
 import { toast } from "sonner"
 import { authClient } from '@/lib/auth-client';
 import { DomainDashboard } from './domain-dashboard';
+import { getPublicDomainUrl, siteConfig } from '@/config/site';
 
 const openInNewTab = (url: string) => {
     window.open(url, '_blank', 'noopener,noreferrer');
@@ -99,7 +100,7 @@ export default function DomainName() {
                         success: () => {
                             if (fileValue.length > 0) {
                                 setTimeout(() => {
-                                    openInNewTab(`https://${(domainValue.toLowerCase().trim())}.pritish.in`);
+                                    openInNewTab(getPublicDomainUrl(domainValue.toLowerCase().trim()));
                                 }, 2000);
                             }
                             setDomainValue('');
@@ -125,12 +126,18 @@ export default function DomainName() {
     return (
         <div className='w-full'>
             <form className='w-full flex flex-col gap-4 items-center' onSubmit={(e) => { e.preventDefault(); handleUpload(); }}>
+                {!isSignedIn && !isPending && (
+                    <p className="w-full text-sm text-default-500">
+                        Sign in to claim a subdomain and upload your HTML.
+                    </p>
+                )}
                 <Input
                     label="Domain Name"
                     labelPlacement='outside'
                     placeholder="Enter your domain name"
                     startContent="https://"
-                    endContent=".pritish.in"
+                    endContent={`.${siteConfig.publicHost}`}
+                    description="Choose carefully. Subdomains cannot be renamed after creation."
                     variant='faded'
                     value={domainValue}
                     onValueChange={handleValueChange}
@@ -139,9 +146,6 @@ export default function DomainName() {
                     color={domainValue && !isInvalid ? 'success' : 'default'}
                     isDisabled={!isSignedIn || isPending}
                 />
-                <p className="w-full text-xs text-default-500">
-                    Domain names are permanent. Delete this domain and create a new one if you need a different name.
-                </p>
                 <div className="w-full">
                     <FileUploader
                         value={fileValue}
@@ -149,7 +153,7 @@ export default function DomainName() {
                         maxSize={16 * 1024 * 1024}
                         maxFiles={1}
                         disabled={!isSignedIn || isPending}
-                        disabledLabel={isSignedIn ? "File Uploaded" : "Sign in to upload HTML"}
+                        disabledLabel={isSignedIn ? "HTML selected" : "Sign in to upload HTML"}
                     />
                 </div>
                 <Button
@@ -161,15 +165,6 @@ export default function DomainName() {
                 >
                     {isSignedIn ? "Create domain" : "Sign in to create a domain"}
                 </Button>
-                {!isSignedIn && !isPending && (
-                    <Button
-                        className='w-full max-w-sm'
-                        variant='flat'
-                        onPress={() => authClient.signIn.social({ provider: "github" })}
-                    >
-                        Sign in with GitHub
-                    </Button>
-                )}
             </form>
             <DomainDashboard refreshKey={refreshKey} />
         </div>

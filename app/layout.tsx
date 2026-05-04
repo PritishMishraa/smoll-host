@@ -41,20 +41,19 @@ export default function RootLayout({
 				)}
 			>
 				<Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
-					<div className="relative flex flex-col h-screen">
+					<div className="app-background relative flex min-h-screen flex-col overflow-hidden">
 						<Navbar />
-						<main className="container mx-auto max-w-7xl pt-16 px-6 flex-grow">
+						<main className="container relative z-10 mx-auto max-w-7xl flex-grow px-6 pt-16">
 							{children}
 						</main>
-						<footer className="w-full flex items-center justify-center py-3">
+						<footer className="relative z-10 flex w-full items-center justify-center py-3">
 							<Link
 								isExternal
-								className="flex items-center gap-1 text-current"
-								href="https://nextui-docs-v2.vercel.app?utm_source=next-app-template"
-								title="nextui.org homepage"
+								className="text-sm text-default-500"
+								href={siteConfig.links.github}
+								title="smoll.host source on GitHub"
 							>
-								<span className="text-default-600">Powered by</span>
-								<p className="text-primary">NextUI</p>
+								smoll.host on GitHub
 							</Link>
 						</footer>
 					</div>

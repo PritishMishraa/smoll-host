@@ -91,7 +91,7 @@ interface FileUploaderProps extends React.HTMLAttributes<HTMLDivElement> {
     /**
      * Text shown when the uploader is disabled.
      * @type string
-     * @default "File Uploaded"
+     * @default "HTML selected"
      */
     disabledLabel?: string
 }
@@ -109,7 +109,7 @@ export function FileUploader(props: FileUploaderProps) {
         maxFiles = 1,
         multiple = false,
         disabled = false,
-        disabledLabel = "File Uploaded",
+        disabledLabel = "HTML selected",
         className,
         ...dropzoneProps
     } = props
@@ -185,9 +185,9 @@ export function FileUploader(props: FileUploaderProps) {
                     <div
                         {...getRootProps()}
                         className={cn(
-                            "group relative grid h-52 w-full cursor-pointer place-items-center rounded-lg border-2 border-dashed border-muted-foreground/25 px-5 py-2.5 text-center transition hover:bg-muted/25",
-                            "ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                            isDragActive && "border-muted-foreground/50",
+                            "group relative grid h-52 w-full cursor-pointer place-items-center rounded-lg border-2 border-dashed border-default-300 bg-default-50/40 px-5 py-2.5 text-center transition-colors hover:border-secondary/60 hover:bg-secondary/10",
+                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                            isDragActive && "border-secondary bg-secondary/10",
                             isDisabled && "pointer-events-none opacity-60",
                             className
                         )}
@@ -198,37 +198,39 @@ export function FileUploader(props: FileUploaderProps) {
                             <div className="flex flex-col items-center justify-center gap-4 sm:px-5">
                                 <div className="rounded-full border border-dashed p-3">
                                     <UploadIcon
-                                        className="size-9 text-muted-foreground transition-transform"
+                                        className="size-9 text-secondary transition-transform"
                                         aria-hidden="true"
                                     />
                                 </div>
-                                <p className="font-medium text-muted-foreground">
-                                    Drop the files here
+                                <p className="font-medium text-default-600">
+                                    {maxFiles > 1 ? "Drop the files here" : "Drop one HTML file here"}
                                 </p>
                             </div>
                         ) : (
                             <div className="flex flex-col items-center justify-center gap-4 sm:px-5">
                                 <div className="rounded-full border border-dashed p-3">
                                     <UploadIcon
-                                        className={cn("size-7 text-muted-foreground", isDisabled && "text-success")}
+                                        className={cn("size-7 text-default-500", isDisabled && "text-success")}
                                         aria-hidden="true"
                                     />
                                 </div>
                                 <div className="space-y-px">
                                     {isDisabled ?
-                                        <p className="font-medium text-muted-foreground">
+                                        <p className="font-medium text-default-600">
                                             {disabledLabel}
                                         </p>
                                         :
                                         <>
-                                            <p className="font-medium text-muted-foreground">
-                                                Drag {`'n'`} drop files here, or click to select files
+                                            <p className="font-medium text-default-600">
+                                                {maxFiles > 1
+                                                    ? "Drag files here, or click to select files"
+                                                    : "Drag a HTML file here, or click to select it"}
                                             </p>
-                                            <p className="text-sm text-muted-foreground/70">
-                                                You can upload
+                                            <p className="text-sm text-default-500">
+                                                {maxFiles > 1 ? "You can upload" : "Only one .html or .htm file is supported"}
                                                 {maxFiles > 1
                                                     ? ` ${maxFiles === Infinity ? "multiple" : maxFiles} files (up to ${formatBytes(maxSize)} each)`
-                                                    : ` a file with ${formatBytes(maxSize)}`}
+                                                    : `, up to ${formatBytes(maxSize)}`}
                                             </p>
                                         </>
                                     }

@@ -6,6 +6,7 @@ type NavItem = {
 export type SiteConfig = {
 	name: string;
 	description: string;
+	publicHost: string;
 	navItems: NavItem[];
 	navMenuItems: NavItem[];
 	links: {
@@ -18,10 +19,11 @@ export type SiteConfig = {
 export const siteConfig: SiteConfig = {
 	name: "smoll.host",
 	description: "Host small static sites on pritish.in subdomains.",
+	publicHost: process.env.NEXT_PUBLIC_PUBLIC_HOST ?? "pritish.in",
 	navItems: [],
 	navMenuItems: [
 		{
-			label: "Projects",
+			label: "Domains",
 			href: "/",
 		},
 		{
@@ -39,3 +41,7 @@ export const siteConfig: SiteConfig = {
 		sponsor: "https://github.com/sponsors/PritishMishraa",
 	},
 };
+
+export function getPublicDomainUrl(domain: string) {
+	return `https://${domain}.${siteConfig.publicHost}`;
+}

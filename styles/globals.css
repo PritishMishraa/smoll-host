@@ -1,3 +1,38 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+	.app-background::before {
+		content: "";
+		position: fixed;
+		inset: 0;
+		z-index: 0;
+		pointer-events: none;
+		background-image:
+			linear-gradient(to right, hsl(var(--nextui-default-200) / 0.34) 1px, transparent 1px),
+			linear-gradient(to bottom, hsl(var(--nextui-default-200) / 0.34) 1px, transparent 1px),
+			radial-gradient(circle at 50% 0%, hsl(var(--nextui-secondary) / 0.20), transparent 34rem),
+			radial-gradient(circle at 82% 24%, hsl(var(--nextui-primary) / 0.12), transparent 28rem);
+		background-size: 48px 48px, 48px 48px, 100% 100%, 100% 100%;
+		-webkit-mask-image: linear-gradient(to bottom, black 0%, black 44%, transparent 82%);
+		mask-image: linear-gradient(to bottom, black 0%, black 44%, transparent 82%);
+	}
+
+	.app-background::after {
+		content: "";
+		position: fixed;
+		inset: 0;
+		z-index: 0;
+		pointer-events: none;
+		background-image: radial-gradient(hsl(var(--nextui-default-400) / 0.28) 1px, transparent 1px);
+		background-size: 18px 18px;
+		opacity: 0.18;
+		-webkit-mask-image: radial-gradient(ellipse at top, black 0%, transparent 68%);
+		mask-image: radial-gradient(ellipse at top, black 0%, transparent 68%);
+	}
+
+	.app-background {
+		background-image: linear-gradient(to bottom, hsl(var(--nextui-background) / 0.72), transparent 10rem);
+	}
+}

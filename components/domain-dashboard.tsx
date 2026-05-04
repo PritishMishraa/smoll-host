@@ -10,6 +10,7 @@ import {
 	listDomains,
 } from "@/components/actions";
 import { FileUploader } from "@/components/file-uploader";
+import { getPublicDomainUrl, siteConfig } from "@/config/site";
 import { authClient } from "@/lib/auth-client";
 
 type HostedDomain = Awaited<ReturnType<typeof listDomains>>[number];
@@ -27,6 +28,8 @@ export function DomainDashboard({ refreshKey }: DomainDashboardProps) {
 	const [fileValue, setFileValue] = React.useState<File[]>([]);
 	const [uploading, setUploading] = React.useState(false);
 	const [deleting, setDeleting] = React.useState(false);
+	const uploadCancelRef = React.useRef<HTMLButtonElement>(null);
+	const deleteCancelRef = React.useRef<HTMLButtonElement>(null);
 
 	const refreshDomains = React.useCallback(async () => {
 		if (!session?.user) {
@@ -52,6 +55,34 @@ export function DomainDashboard({ refreshKey }: DomainDashboardProps) {
 		setFileValue([]);
 		setUploadingDomain(hostedDomain);
 	};
+
+	React.useEffect(() => {
+		if (!uploadingDomain && !deletingDomain) {
+			return;
+		}
+
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (event.key !== "Escape") {
+				return;
+			}
+
+			setUploadingDomain(null);
+			setDeletingDomain(null);
+			setFileValue([]);
+		};
+
+		document.body.style.overflow = "hidden";
+		document.addEventListener("keydown", onKeyDown);
+
+		requestAnimationFrame(() => {
+			(uploadingDomain ? uploadCancelRef : deleteCancelRef).current?.focus();
+		});
+
+		return () => {
+			document.body.style.overflow = "";
+			document.removeEventListener("keydown", onKeyDown);
+		};
+	}, [deletingDomain, uploadingDomain]);
 
 	const replaceHtml = async () => {
 		if (!uploadingDomain || fileValue.length === 0) {
@@ -115,7 +146,7 @@ export function DomainDashboard({ refreshKey }: DomainDashboardProps) {
 						Your domains
 					</p>
 					<h2 className="text-xl font-semibold text-foreground">
-						Projects
+						Domains
 					</h2>
 				</div>
 				<Button size="sm" variant="flat" onPress={refreshDomains} isLoading={loading}>
@@ -138,23 +169,20 @@ export function DomainDashboard({ refreshKey }: DomainDashboardProps) {
 								<Link
 									isExternal
 									className="block truncate text-base font-medium text-foreground"
-									href={`https://${hostedDomain.name}.pritish.in`}
+									href={getPublicDomainUrl(hostedDomain.name)}
 								>
-									{hostedDomain.name}.pritish.in
+									{hostedDomain.name}.{siteConfig.publicHost}
 								</Link>
 								<p className="mt-1 text-xs text-default-500">
 									{hostedDomain.publishedAt
 										? `Published ${formatDate(hostedDomain.publishedAt)}`
 										: "No HTML file uploaded yet"}
 								</p>
-								<p className="mt-1 text-xs text-default-400">
-									Domain name is permanent.
-								</p>
 							</div>
 							<div className="flex shrink-0 flex-wrap gap-2">
 								<Button
 									as={Link}
-									href={`https://${hostedDomain.name}.pritish.in`}
+									href={getPublicDomainUrl(hostedDomain.name)}
 									isExternal
 									size="sm"
 									variant="flat"
@@ -184,14 +212,23 @@ export function DomainDashboard({ refreshKey }: DomainDashboardProps) {
 			)}
 
 			{uploadingDomain && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm">
-					<div className="w-full max-w-xl overflow-hidden rounded-lg border border-default-200 bg-background shadow-2xl">
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm" role="presentation" onMouseDown={() => {
+					setUploadingDomain(null);
+					setFileValue([]);
+				}}>
+					<div
+						aria-labelledby="upload-dialog-title"
+						aria-modal="true"
+						className="w-full max-w-xl overflow-hidden rounded-lg border border-default-200 bg-background shadow-2xl"
+						role="dialog"
+						onMouseDown={(event) => event.stopPropagation()}
+					>
 						<div className="border-b border-default-200 px-5 py-4">
 							<p className="text-xs uppercase tracking-widest text-default-500">
 								Replace HTML
 							</p>
-							<h3 className="truncate text-lg font-semibold">
-								{uploadingDomain.name}.pritish.in
+							<h3 id="upload-dialog-title" className="truncate text-lg font-semibold">
+								{uploadingDomain.name}.{siteConfig.publicHost}
 							</h3>
 						</div>
 						<div className="p-5">
@@ -204,6 +241,7 @@ export function DomainDashboard({ refreshKey }: DomainDashboardProps) {
 						</div>
 						<div className="flex items-center justify-end gap-2 border-t border-default-200 px-5 py-4">
 							<Button
+								ref={uploadCancelRef}
 								variant="flat"
 								onPress={() => {
 									setUploadingDomain(null);
@@ -226,19 +264,25 @@ export function DomainDashboard({ refreshKey }: DomainDashboardProps) {
 			)}
 
 			{deletingDomain && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm">
-					<div className="w-full max-w-md rounded-lg border border-danger-200 bg-background p-5 shadow-2xl">
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm" role="presentation" onMouseDown={() => setDeletingDomain(null)}>
+					<div
+						aria-labelledby="delete-dialog-title"
+						aria-modal="true"
+						className="w-full max-w-md rounded-lg border border-danger-200 bg-background p-5 shadow-2xl"
+						role="dialog"
+						onMouseDown={(event) => event.stopPropagation()}
+					>
 						<p className="text-xs uppercase tracking-widest text-danger">
 							Delete domain
 						</p>
-						<h3 className="mt-1 text-lg font-semibold">
-							{deletingDomain.name}.pritish.in
+						<h3 id="delete-dialog-title" className="mt-1 text-lg font-semibold">
+							{deletingDomain.name}.{siteConfig.publicHost}
 						</h3>
 						<p className="mt-3 text-sm text-default-500">
 							This removes the domain and deletes its uploaded HTML file.
 						</p>
 						<div className="mt-5 flex justify-end gap-2">
-							<Button variant="flat" onPress={() => setDeletingDomain(null)}>
+							<Button ref={deleteCancelRef} variant="flat" onPress={() => setDeletingDomain(null)}>
 								Cancel
 							</Button>
 							<Button color="danger" isLoading={deleting} onPress={confirmDelete}>
