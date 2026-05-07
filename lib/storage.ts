@@ -1,8 +1,7 @@
 import "server-only";
 
 import {
-	DeleteObjectsCommand,
-	ListObjectsV2Command,
+	DeleteObjectCommand,
 	PutObjectCommand,
 	S3Client,
 } from "@aws-sdk/client-s3";
@@ -32,37 +31,12 @@ export async function uploadDomainHtml(domainName: string, file: File) {
 }
 
 export async function deleteDomainFiles(domainName: string) {
-	const bucket = getBucketName();
-	const prefix = `${domainName}/`;
-	let continuationToken: string | undefined;
-
-	do {
-		const listedObjects = await s3.send(
-			new ListObjectsV2Command({
-				Bucket: bucket,
-				Prefix: prefix,
-				ContinuationToken: continuationToken,
-			})
-		);
-
-		const objects = listedObjects.Contents?.map((object) => ({ Key: object.Key })).filter(
-			(object): object is { Key: string } => Boolean(object.Key)
-		);
-
-		if (objects?.length) {
-			await s3.send(
-				new DeleteObjectsCommand({
-					Bucket: bucket,
-					Delete: {
-						Objects: objects,
-						Quiet: true,
-					},
-				})
-			);
-		}
-
-		continuationToken = listedObjects.NextContinuationToken;
-	} while (continuationToken);
+	await s3.send(
+		new DeleteObjectCommand({
+			Bucket: getBucketName(),
+			Key: getIndexKey(domainName),
+		})
+	);
 }
 
 function getBucketName() {

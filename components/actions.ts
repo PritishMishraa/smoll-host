@@ -25,8 +25,18 @@ export async function listDomains() {
 }
 
 export async function deleteDomain(value: string) {
-	const userId = await requireUserId();
-	await deleteDomainForUser(value, userId);
+	try {
+		const userId = await requireUserId();
+		await deleteDomainForUser(value, userId);
+		return { ok: true as const };
+	} catch (error) {
+		console.error("Failed to delete domain:", error);
+
+		return {
+			ok: false as const,
+			error: getActionErrorMessage(error, "Failed to delete domain"),
+		};
+	}
 }
 
 async function requireUserId() {
@@ -39,4 +49,16 @@ async function requireUserId() {
 	}
 
 	return session.user.id;
+}
+
+function getActionErrorMessage(error: unknown, fallback: string) {
+	if (!(error instanceof Error)) {
+		return fallback;
+	}
+
+	if (error.message.includes("sign in") || error.message.includes("not found")) {
+		return error.message;
+	}
+
+	return fallback;
 }

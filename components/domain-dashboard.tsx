@@ -123,7 +123,11 @@ export function DomainDashboard({ refreshKey }: DomainDashboardProps) {
 
 		setDeleting(true);
 		try {
-			await deleteDomain(deletingDomain.name);
+			const result = await deleteDomain(deletingDomain.name);
+			if (!result.ok) {
+				throw new Error(result.error);
+			}
+
 			await refreshDomains();
 			setDeletingDomain(null);
 			toast.success("Domain deleted");
