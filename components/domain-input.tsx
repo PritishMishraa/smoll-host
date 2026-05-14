@@ -1,6 +1,5 @@
 "use client";
 
-
 import { Input } from '@nextui-org/input'
 import React from 'react'
 import { FileUploader } from './file-uploader';
@@ -10,19 +9,27 @@ import { toast } from "sonner"
 import { authClient } from '@/lib/auth-client';
 import { DomainDashboard } from './domain-dashboard';
 import { getPublicDomainUrl, siteConfig } from '@/config/site';
+import { DeployLoading } from './deploy-loading';
+import { DeploySuccess } from './deploy-success';
+import { motion } from "framer-motion";
 
 const openInNewTab = (url: string) => {
     window.open(url, '_blank', 'noopener,noreferrer');
 };
 
+type Step = 1 | 2 | 3 | 'success';
+
 export default function DomainName() {
     const { data: session, isPending } = authClient.useSession();
     const isSignedIn = Boolean(session?.user);
+    const [step, setStep] = React.useState<Step>(1);
     const [domainValue, setDomainValue] = React.useState('')
     const [isInvalid, setIsInvalid] = React.useState(false);
+    const [invalidMessage, setInvalidMessage] = React.useState<string | undefined>(undefined);
     const [fileValue, setFileValue] = React.useState<File[]>([]);
     const [loading, setLoading] = React.useState(false);
     const [refreshKey, setRefreshKey] = React.useState(0);
+    const [uploadError, setUploadError] = React.useState<string | null>(null);
     const domainCheckTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
     const domainCheckSequence = React.useRef(0);
 
@@ -35,12 +42,37 @@ export default function DomainName() {
         domainCheckSequence.current = sequence;
 
         domainCheckTimeout.current = setTimeout(async () => {
-            const isValid = await checkDomain(value.trim());
+            const trimmed = value.trim().toLowerCase();
+            if (!trimmed) {
+                if (domainCheckSequence.current === sequence) {
+                    setIsInvalid(false);
+                    setInvalidMessage(undefined);
+                }
+                return;
+            }
+
+            const isValidFormat = /^[a-z0-9-]{3,30}$/.test(trimmed);
+            if (!isValidFormat) {
+                if (domainCheckSequence.current === sequence) {
+                    setIsInvalid(true);
+                    if (trimmed.length < 3) {
+                        setInvalidMessage("Too short — minimum 3 characters.");
+                    } else if (trimmed.length > 30) {
+                        setInvalidMessage("Too long — maximum 30 characters.");
+                    } else {
+                        setInvalidMessage("Letters, numbers, and hyphens only.");
+                    }
+                }
+                return;
+            }
+
+            const isValid = await checkDomain(trimmed);
 
             if (domainCheckSequence.current === sequence) {
                 setIsInvalid(!isValid);
+                setInvalidMessage(isValid ? undefined : `That name is taken. Try ${trimmed}-2 or ${trimmed}-dev.`);
             }
-        }, 100);
+        }, 300);
     }, []);
 
     React.useEffect(() => {
@@ -56,9 +88,14 @@ export default function DomainName() {
             return;
         }
 
-        setDomainValue(newValue);
-        debouncedCheckDomain(newValue);
+        // Only allow valid characters while typing
+        const sanitized = newValue.toLowerCase().replace(/[^a-z0-9-]/g, '');
+        setDomainValue(sanitized);
+        setUploadError(null);
+        debouncedCheckDomain(sanitized);
     };
+
+    const canProceedFromStep1 = domainValue.length >= 3 && !isInvalid && isSignedIn;
 
     const handleUpload = async () => {
         if (!isSignedIn) {
@@ -66,106 +103,223 @@ export default function DomainName() {
             return;
         }
 
-        if (domainValue && !isInvalid) {
+        if (step === 1) {
+            if (canProceedFromStep1) {
+                setStep(2);
+            } else {
+                toast.error("Please enter a valid, available domain name!");
+            }
+            return;
+        }
+
+        if (step === 2) {
+            if (fileValue.length === 0) {
+                toast.error("Please select an HTML file first.");
+                return;
+            }
+
+            setUploadError(null);
+            setStep(3);
+            setLoading(true);
+
             try {
-                setLoading(true);
-                const uploadPromise = new Promise<void>(async (resolve, reject) => {
-                    try {
-                        const formData = new FormData();
-                        formData.set("domain", domainValue.toLowerCase().trim());
-                        if (fileValue[0]) {
-                            formData.set("file", fileValue[0]);
-                        }
+                const formData = new FormData();
+                formData.set("domain", domainValue.toLowerCase().trim());
+                if (fileValue[0]) {
+                    formData.set("file", fileValue[0]);
+                }
 
-                        const response = await fetch("/api/domains", {
-                            method: "POST",
-                            body: formData,
-                        });
-
-                        if (!response.ok) {
-                            const payload = await response.json().catch(() => null);
-                            throw new Error(payload?.error ?? "Failed to create domain");
-                        }
-
-                        resolve();
-                    } catch (error) {
-                        reject(error);
-                    }
+                const response = await fetch("/api/domains", {
+                    method: "POST",
+                    body: formData,
                 });
 
-                toast.promise(
-                    uploadPromise,
-                    {
-                        loading: 'Uploading file...',
-                        success: () => {
-                            if (fileValue.length > 0) {
-                                setTimeout(() => {
-                                    openInNewTab(getPublicDomainUrl(domainValue.toLowerCase().trim()));
-                                }, 2000);
-                            }
-                            setDomainValue('');
-                            setFileValue([]);
-                            setRefreshKey((value) => value + 1);
-                            return fileValue.length > 0
-                                ? 'Domain created and file uploaded!'
-                                : 'Domain created!';
-                        },
-                        error: (error) => `Error uploading files: ${error.message}`,
+                if (!response.ok) {
+                    const payload = await response.json().catch(() => null);
+                    throw new Error(payload?.error ?? "Failed to create domain");
+                }
+
+                setTimeout(() => {
+                    setStep('success');
+                    setRefreshKey((value) => value + 1);
+                    if (fileValue.length > 0) {
+                        setTimeout(() => {
+                            openInNewTab(getPublicDomainUrl(domainValue.toLowerCase().trim()));
+                        }, 1500);
                     }
-                );
+                }, 2800);
             } catch (error) {
-                console.error("Error uploading HTML files:", error);
+                const message = error instanceof Error ? error.message : "Something went wrong";
+                setUploadError(message);
+                setStep(2);
+                toast.error(message);
             } finally {
                 setLoading(false);
             }
-        } else {
-            toast.error("Please enter a valid domain name!");
+        }
+    };
+
+    const resetFlow = () => {
+        setDomainValue('');
+        setFileValue([]);
+        setIsInvalid(false);
+        setInvalidMessage(undefined);
+        setUploadError(null);
+        setStep(1);
+    };
+
+    const goBack = () => {
+        if (step === 2) {
+            setStep(1);
+            setUploadError(null);
         }
     };
 
     return (
         <div className='w-full'>
-            <form className='w-full flex flex-col gap-4 items-center' onSubmit={(e) => { e.preventDefault(); handleUpload(); }}>
-                {!isSignedIn && !isPending && (
-                    <p className="w-full text-sm text-default-500">
-                        Sign in to claim a subdomain and upload your HTML.
-                    </p>
+            <div className="w-full flex flex-col items-center">
+                {step === 1 && (
+                    <motion.div
+                        key="step1"
+                        className="w-full flex flex-col gap-5 items-center"
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                    >
+                        <div className="w-full text-center mb-2">
+                            <p className="text-xs font-medium uppercase tracking-widest text-default-500">
+                                Step 1 of 3
+                            </p>
+                            <h3 className="mt-1 text-xl font-semibold">
+                                What should we call it?
+                            </h3>
+                            <p className="mt-1 text-sm text-default-500">
+                                Pick a subdomain for your site.
+                            </p>
+                        </div>
+
+                        <Input
+                            label="Subdomain"
+                            labelPlacement='outside'
+                            placeholder="my-awesome-site"
+                            startContent={
+                                <span className="text-default-400 text-sm">https://</span>
+                            }
+                            endContent={
+                                <span className="text-default-400 text-sm whitespace-nowrap">.{siteConfig.publicHost}</span>
+                            }
+                            variant='faded'
+                            value={domainValue}
+                            onValueChange={handleValueChange}
+                            errorMessage={isInvalid && invalidMessage}
+                            isInvalid={isInvalid}
+                            color={domainValue && !isInvalid ? 'success' : 'default'}
+                            isDisabled={!isSignedIn || isPending}
+                            classNames={{
+                                input: "font-medium",
+                            }}
+                        />
+
+                        <Button
+                            isLoading={loading || isPending}
+                            isDisabled={!canProceedFromStep1 || loading || isPending}
+                            className='w-full max-w-sm'
+                            color='secondary'
+                            onPress={handleUpload}
+                        >
+                            {isSignedIn ? "Continue" : "Sign in with GitHub to continue"}
+                        </Button>
+
+                        {!isSignedIn && !isPending && (
+                            <p className="text-xs text-default-500">
+                                Signing in lets you claim a subdomain and upload your HTML.
+                            </p>
+                        )}
+                    </motion.div>
                 )}
-                <Input
-                    label="Domain Name"
-                    labelPlacement='outside'
-                    placeholder="Enter your domain name"
-                    startContent="https://"
-                    endContent={`.${siteConfig.publicHost}`}
-                    description="Choose carefully. Subdomains cannot be renamed after creation."
-                    variant='faded'
-                    value={domainValue}
-                    onValueChange={handleValueChange}
-                    errorMessage={isInvalid && "Domain is already taken!"}
-                    isInvalid={isInvalid}
-                    color={domainValue && !isInvalid ? 'success' : 'default'}
-                    isDisabled={!isSignedIn || isPending}
-                />
-                <div className="w-full">
-                    <FileUploader
-                        value={fileValue}
-                        onValueChange={setFileValue}
-                        maxSize={16 * 1024 * 1024}
-                        maxFiles={1}
-                        disabled={!isSignedIn || isPending}
-                        disabledLabel={isSignedIn ? "HTML selected" : "Sign in to upload HTML"}
-                    />
-                </div>
-                <Button
-                    isLoading={loading || isPending}
-                    isDisabled={loading || isPending}
-                    className='w-full max-w-sm'
-                    color='secondary'
-                    type='submit'
-                >
-                    {isSignedIn ? "Create domain" : "Sign in to create a domain"}
-                </Button>
-            </form>
+
+                {step === 2 && (
+                    <motion.div
+                        key="step2"
+                        className="w-full flex flex-col gap-5 items-center"
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                    >
+                        <div className="w-full text-center mb-2">
+                            <p className="text-xs font-medium uppercase tracking-widest text-default-500">
+                                Step 2 of 3
+                            </p>
+                            <h3 className="mt-1 text-xl font-semibold">
+                                Upload your HTML file
+                            </h3>
+                            <p className="mt-1 text-sm text-default-500">
+                                For: <span className="font-medium text-foreground">https://{domainValue}.{siteConfig.publicHost}</span>
+                            </p>
+                        </div>
+
+                        <div className="w-full">
+                            <FileUploader
+                                value={fileValue}
+                                onValueChange={setFileValue}
+                                maxSize={16 * 1024 * 1024}
+                                maxFiles={1}
+                                disabled={!isSignedIn || isPending}
+                                disabledLabel={isSignedIn ? "HTML selected" : "Sign in to upload HTML"}
+                                inlineError={uploadError}
+                            />
+                        </div>
+
+                        <div className="flex w-full max-w-sm gap-3">
+                            <Button
+                                variant="flat"
+                                className="flex-1"
+                                onPress={goBack}
+                                isDisabled={loading}
+                            >
+                                ← Back
+                            </Button>
+                            <Button
+                                isLoading={loading}
+                                isDisabled={loading || fileValue.length === 0}
+                                className='flex-1'
+                                color='secondary'
+                                onPress={handleUpload}
+                            >
+                                Deploy
+                            </Button>
+                        </div>
+                    </motion.div>
+                )}
+
+                {step === 3 && (
+                    <motion.div
+                        key="step3"
+                        className="w-full flex flex-col items-center"
+                        initial={{ opacity: 0, scale: 0.96 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.3 }}
+                    >
+                        <DeployLoading domain={`${domainValue}.${siteConfig.publicHost}`} />
+                    </motion.div>
+                )}
+
+                {step === 'success' && (
+                    <motion.div
+                        key="success"
+                        className="w-full flex flex-col items-center"
+                        initial={{ opacity: 0, scale: 0.96 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.3 }}
+                    >
+                        <DeploySuccess
+                            domain={domainValue}
+                            onDeployAnother={resetFlow}
+                        />
+                    </motion.div>
+                )}
+            </div>
+
             <DomainDashboard refreshKey={refreshKey} />
         </div>
     )
