@@ -1,8 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@nextui-org/button";
+import { motion } from "framer-motion";
 
 interface DeployLoadingProps {
   domain: string;
@@ -43,9 +42,6 @@ export function DeployLoading({ domain }: DeployLoadingProps) {
   return (
     <div className="flex w-full max-w-md flex-col items-center gap-8 py-8">
       <div className="text-center">
-        <p className="text-xs font-medium uppercase tracking-widest text-default-500">
-          Step 3 of 3
-        </p>
         <h3 className="mt-1 text-xl font-semibold">Deploying your site...</h3>
         <p className="mt-1 text-sm text-default-500">
           This usually takes about 5 seconds.
