@@ -1,0 +1,665 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>smoll.host Design Decisions</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #171717;
+      --muted: #686868;
+      --soft: #f7f7f4;
+      --line: #e7e3dc;
+      --panel: #ffffff;
+      --accent: #7c3aed;
+      --accent-soft: #f3edff;
+      --good: #0f8a5f;
+      --warn: #b45309;
+      --shadow: 0 18px 48px rgba(23, 23, 23, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: #fbfaf8;
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+
+    a { color: inherit; }
+
+    .page {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    header {
+      min-height: 84vh;
+      display: grid;
+      align-items: center;
+      padding: 56px 0 36px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 440px);
+      gap: 48px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      margin: 0 0 16px;
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 750;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+
+    h1 {
+      max-width: 780px;
+      margin-bottom: 18px;
+      font-size: clamp(42px, 8vw, 86px);
+      line-height: 0.96;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin-bottom: 18px;
+      font-size: clamp(28px, 4vw, 48px);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin-bottom: 8px;
+      font-size: 18px;
+      line-height: 1.25;
+    }
+
+    .lede {
+      max-width: 640px;
+      margin-bottom: 28px;
+      color: var(--muted);
+      font-size: clamp(18px, 2vw, 22px);
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .pill {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--panel);
+      padding: 8px 12px;
+      color: #3a3a3a;
+      font-size: 13px;
+      box-shadow: 0 1px 0 rgba(23, 23, 23, 0.03);
+    }
+
+    .device {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      padding: 16px;
+    }
+
+    .browser-bar {
+      display: flex;
+      gap: 6px;
+      padding: 4px 4px 14px;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: #d9d4ca;
+    }
+
+    .screen {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: linear-gradient(#fff, #fbfbfb);
+      padding: 24px;
+      min-height: 460px;
+    }
+
+    .screen-title {
+      margin-bottom: 6px;
+      font-size: 34px;
+      font-weight: 800;
+      color: var(--accent);
+      text-align: center;
+    }
+
+    .screen-subtitle {
+      margin: 0 auto 28px;
+      max-width: 310px;
+      color: var(--muted);
+      font-size: 14px;
+      text-align: center;
+    }
+
+    .mini-step {
+      animation: rotateSteps 9s infinite;
+      display: none;
+    }
+
+    .mini-step:nth-of-type(1) { display: block; }
+
+    @keyframes rotateSteps {
+      0%, 28% { opacity: 1; transform: translateY(0); }
+      32%, 100% { opacity: 0; transform: translateY(8px); }
+    }
+
+    .form-card {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 22px;
+      background: #fff;
+    }
+
+    .step-label {
+      margin-bottom: 4px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 750;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      text-align: center;
+    }
+
+    .input {
+      margin-top: 18px;
+      border: 1px solid #d8d3ca;
+      border-radius: 12px;
+      padding: 14px;
+      color: #444;
+      font-size: 14px;
+    }
+
+    .button {
+      display: block;
+      width: 100%;
+      margin-top: 16px;
+      border: 0;
+      border-radius: 12px;
+      background: var(--accent);
+      color: #fff;
+      padding: 13px 16px;
+      font-weight: 750;
+      text-align: center;
+    }
+
+    .drop {
+      display: grid;
+      place-items: center;
+      min-height: 180px;
+      margin-top: 18px;
+      border: 2px dashed #d8d3ca;
+      border-radius: 16px;
+      background: var(--soft);
+      color: var(--muted);
+      text-align: center;
+      padding: 20px;
+    }
+
+    .progress {
+      height: 8px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #eeeae4;
+    }
+
+    .progress span {
+      display: block;
+      width: 72%;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--accent);
+    }
+
+    .checks {
+      display: grid;
+      gap: 12px;
+      margin-top: 24px;
+      color: #444;
+      font-size: 14px;
+    }
+
+    .success-mark {
+      display: grid;
+      place-items: center;
+      width: 62px;
+      height: 62px;
+      margin: 0 auto 18px;
+      border-radius: 999px;
+      background: #eaf8f1;
+      color: var(--good);
+      font-size: 34px;
+      font-weight: 800;
+    }
+
+    section {
+      padding: 66px 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .section-head {
+      display: grid;
+      grid-template-columns: minmax(0, 0.8fr) minmax(280px, 1fr);
+      gap: 44px;
+      align-items: end;
+      margin-bottom: 28px;
+    }
+
+    .section-head p {
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 22px;
+      box-shadow: 0 10px 32px rgba(23, 23, 23, 0.04);
+    }
+
+    .card p, .timeline p, .compare p {
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .tradeoff {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .choice {
+      border-radius: 8px;
+      background: var(--soft);
+      padding: 14px;
+      font-size: 14px;
+    }
+
+    .choice strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--ink);
+    }
+
+    .timeline {
+      display: grid;
+      gap: 12px;
+    }
+
+    .event {
+      display: grid;
+      grid-template-columns: 132px minmax(0, 1fr);
+      gap: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 18px;
+    }
+
+    code {
+      border-radius: 6px;
+      background: #f0ece6;
+      padding: 2px 6px;
+      color: #4b3b2c;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.9em;
+    }
+
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .mock {
+      min-height: 310px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+      padding: 18px;
+    }
+
+    .old-stack {
+      display: grid;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .old-line, .old-box {
+      border: 1px solid #ded8ce;
+      border-radius: 8px;
+      background: #faf8f4;
+      padding: 12px;
+      color: #6d665f;
+      font-size: 13px;
+    }
+
+    .old-box {
+      min-height: 88px;
+      display: grid;
+      place-items: center;
+      border-style: dashed;
+    }
+
+    .architecture {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #111;
+    }
+
+    .architecture img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .caption {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .principles {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .principle {
+      border-left: 3px solid var(--accent);
+      background: var(--panel);
+      padding: 16px 18px;
+    }
+
+    .files {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    footer {
+      padding: 36px 0 64px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    @media (max-width: 860px) {
+      .hero, .section-head, .grid, .compare, .tradeoff, .principles {
+        grid-template-columns: 1fr;
+      }
+
+      header { min-height: auto; }
+      .screen { min-height: 400px; }
+      .event { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <div class="hero">
+        <div>
+          <p class="eyebrow">Design decisions and tradeoffs</p>
+          <h1>Turning static hosting into a 30-second flow.</h1>
+          <p class="lede">smoll.host started as a working upload form. The redesign made the same technical path feel guided, legible, and rewarding: pick a subdomain, drop one HTML file, and leave with a live URL.</p>
+          <ul class="meta" aria-label="Project summary">
+            <li class="pill">Next.js 14</li>
+            <li class="pill">S3 uploads</li>
+            <li class="pill">Neon + Drizzle</li>
+            <li class="pill">Better Auth</li>
+            <li class="pill">Redis cache</li>
+          </ul>
+        </div>
+
+        <aside class="device" aria-label="Animated product flow preview">
+          <div class="browser-bar" aria-hidden="true"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+          <div class="screen">
+            <div class="screen-title">smoll.host</div>
+            <p class="screen-subtitle">Your HTML live in 30 seconds. No config, no CLI, just a subdomain and a file.</p>
+            <div class="form-card">
+              <p class="step-label">Step 1 of 3</p>
+              <h3 style="text-align:center">What should we call it?</h3>
+              <div class="input">https:// my-site .pritish.in</div>
+              <span class="button">Continue</span>
+            </div>
+            <div class="form-card" style="margin-top:14px">
+              <p class="step-label">Step 2 of 3</p>
+              <div class="drop">Drop your HTML file here<br><small>Only one .html or .htm file</small></div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </header>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Before to after</p>
+          <h2>We changed the shape of the task.</h2>
+        </div>
+        <p>The old page exposed every decision at once. The new page treats deployment as a short conversation, keeping each screen focused on exactly one commitment.</p>
+      </div>
+
+      <div class="compare">
+        <div class="mock">
+          <p class="eyebrow">Before</p>
+          <h3>Everything visible, all the time</h3>
+          <p>Domain naming, upload, warnings, and submission competed for attention before the user knew whether their name was valid.</p>
+          <div class="old-stack">
+            <div class="old-line">Domain Name</div>
+            <div class="old-line">https:// ________ .pritish.in</div>
+            <div class="old-line">Choose carefully. Subdomains cannot be renamed.</div>
+            <div class="old-box">Drop zone, always visible</div>
+            <div class="old-line">Create domain</div>
+          </div>
+        </div>
+
+        <div class="mock">
+          <p class="eyebrow">After</p>
+          <h3>One decision per step</h3>
+          <p>Validation happens inline, the upload appears only when it matters, and the result becomes a dedicated success moment.</p>
+          <div class="form-card">
+            <p class="step-label">Step 1 of 3</p>
+            <h3 style="text-align:center">Pick a subdomain</h3>
+            <div class="input">https:// portfolio .pritish.in</div>
+            <span class="button">Continue</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Tradeoffs</p>
+          <h2>The redesign chose clarity over density.</h2>
+        </div>
+        <p>Every change had a cost. The guiding rule was simple: optimize for a first deploy feeling obvious, while preserving shortcuts for users who already know what they are doing.</p>
+      </div>
+
+      <div class="grid">
+        <article class="card">
+          <h3>Progressive disclosure</h3>
+          <p>We split the form into domain, upload, deploy, and success states.</p>
+          <div class="tradeoff">
+            <div class="choice"><strong>Gain</strong>Less cognitive load and clearer next actions.</div>
+            <div class="choice"><strong>Cost</strong>More component state and transition handling.</div>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>Inline validation</h3>
+          <p>Subdomain checks moved closer to typing, with a 300ms debounce and direct repair copy.</p>
+          <div class="tradeoff">
+            <div class="choice"><strong>Gain</strong>Users do not reach upload with a bad name.</div>
+            <div class="choice"><strong>Cost</strong>More API traffic and race-condition handling.</div>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>Visible waiting</h3>
+          <p>A button spinner became a progress bar plus a human-readable deployment checklist.</p>
+          <div class="tradeoff">
+            <div class="choice"><strong>Gain</strong>Waiting feels shorter because the work is named.</div>
+            <div class="choice"><strong>Cost</strong>The UI now simulates stages around one request.</div>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>Success as destination</h3>
+          <p>The final state replaced a toast and reset with a live URL, copy action, and open action.</p>
+          <div class="tradeoff">
+            <div class="choice"><strong>Gain</strong>The user leaves with proof and momentum.</div>
+            <div class="choice"><strong>Cost</strong>Resetting the form becomes an explicit choice.</div>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>Dashboard onboarding</h3>
+          <p>The empty dashboard became a warm prompt with a direct path back to creation.</p>
+          <div class="tradeoff">
+            <div class="choice"><strong>Gain</strong>The empty state teaches the product.</div>
+            <div class="choice"><strong>Cost</strong>More visual weight than a plain table row.</div>
+          </div>
+        </article>
+
+        <article class="card">
+          <h3>Co-located errors</h3>
+          <p>Upload and domain errors moved into the controls that caused them.</p>
+          <div class="tradeoff">
+            <div class="choice"><strong>Gain</strong>Fixes are obvious and persistent.</div>
+            <div class="choice"><strong>Cost</strong>Each component owns more message states.</div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Evolution in git</p>
+          <h2>The app grew from plumbing to product.</h2>
+        </div>
+        <p>The commit history shows the product maturing in layers: identity first, ownership next, then dashboards, polish, and reliability fixes.</p>
+      </div>
+
+      <div class="timeline">
+        <article class="event">
+          <strong><code>56532e4</code><br>Auth + data</strong>
+          <p>GitHub auth, Postgres, Drizzle schema, and sessions made subdomains belong to real users instead of anonymous uploads.</p>
+        </article>
+        <article class="event">
+          <strong><code>1270ce6</code><br>Owned uploads</strong>
+          <p>Domain workflows, validation, storage, and Redis caching moved hosting into a proper backend path with ownership checks.</p>
+        </article>
+        <article class="event">
+          <strong><code>44175f5</code><br>Dashboard</strong>
+          <p>The product gained a place to manage domains, replace HTML, and return to previous work instead of only creating new sites.</p>
+        </article>
+        <article class="event">
+          <strong><code>79c5c9f</code><br>Polish pass</strong>
+          <p>Navigation, layout, dashboard styling, and upload interactions were tightened once the core workflow existed.</p>
+        </article>
+        <article class="event">
+          <strong><code>c2bbf82</code><br>Deletion reliability</strong>
+          <p>Domain deletion was made safer, which matters once users can manage real hosted sites rather than test artifacts.</p>
+        </article>
+        <article class="event">
+          <strong><code>working tree</code><br>Guided deploy flow</strong>
+          <p>The current redesign adds a wizard, deployment checklist, success card, inline upload errors, and a more useful empty dashboard.</p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Architecture visual</p>
+          <h2>The technical flow stayed intentionally small.</h2>
+        </div>
+        <p>The interface became more guided, but the backend idea stayed lean: the browser asks the app for a safe upload path, then sends the file to S3.</p>
+      </div>
+      <figure>
+        <div class="architecture">
+          <img src="image.png" alt="Sequence diagram showing user, browser, server, and S3 pre-signed URL upload flow">
+        </div>
+        <figcaption class="caption">Existing project diagram from <code>image.png</code>, reused here to show why the UI checklist says “Uploading to S3” instead of exposing raw API details.</figcaption>
+      </figure>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Principles</p>
+          <h2>What guided the final shape.</h2>
+        </div>
+        <p>The strongest decisions are the ones that repeat across states: fewer visible choices, clearer feedback, and a finish that feels like an outcome.</p>
+      </div>
+
+      <div class="principles">
+        <div class="principle"><strong>One visible decision</strong><br>Show the domain input before upload, and upload before deployment.</div>
+        <div class="principle"><strong>Feedback at the source</strong><br>Validation and file errors live beside the control they explain.</div>
+        <div class="principle"><strong>Human system language</strong><br>Say “Uploading to S3” and “Saving to database,” not endpoint names.</div>
+        <div class="principle"><strong>Completion deserves UI</strong><br>A live URL, copy button, and open button replace a disposable toast.</div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">Files touched</p>
+          <h2>The redesign is concentrated.</h2>
+        </div>
+        <p>The implementation stays close to the user journey: homepage framing, domain wizard, uploader feedback, dashboard empty state, and two dedicated deploy states.</p>
+      </div>
+
+      <div class="files">
+        <span class="pill">app/page.tsx</span>
+        <span class="pill">components/domain-input.tsx</span>
+        <span class="pill">components/file-uploader.tsx</span>
+        <span class="pill">components/domain-dashboard.tsx</span>
+        <span class="pill">components/deploy-loading.tsx</span>
+        <span class="pill">components/deploy-success.tsx</span>
+        <span class="pill">DESIGN.md</span>
+      </div>
+    </section>
+
+    <footer>
+      Built as a single-page companion to <code>DESIGN.md</code>. Open this file directly in a browser; it only depends on the existing <code>image.png</code> asset.
+    </footer>
+  </main>
+</body>
+</html>
