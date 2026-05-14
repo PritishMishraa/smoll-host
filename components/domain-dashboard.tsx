@@ -13,6 +13,8 @@ import { FileUploader } from "@/components/file-uploader";
 import { getPublicDomainUrl, siteConfig } from "@/config/site";
 import { authClient } from "@/lib/auth-client";
 
+import { motion } from "framer-motion";
+
 type HostedDomain = Awaited<ReturnType<typeof listDomains>>[number];
 
 interface DomainDashboardProps {
@@ -28,6 +30,7 @@ export function DomainDashboard({ refreshKey }: DomainDashboardProps) {
 	const [fileValue, setFileValue] = React.useState<File[]>([]);
 	const [uploading, setUploading] = React.useState(false);
 	const [deleting, setDeleting] = React.useState(false);
+	const [uploadError, setUploadError] = React.useState<string | null>(null);
 	const uploadCancelRef = React.useRef<HTMLButtonElement>(null);
 	const deleteCancelRef = React.useRef<HTMLButtonElement>(null);
 
@@ -53,6 +56,7 @@ export function DomainDashboard({ refreshKey }: DomainDashboardProps) {
 
 	const openUpload = (hostedDomain: HostedDomain) => {
 		setFileValue([]);
+		setUploadError(null);
 		setUploadingDomain(hostedDomain);
 	};
 
@@ -69,6 +73,7 @@ export function DomainDashboard({ refreshKey }: DomainDashboardProps) {
 			setUploadingDomain(null);
 			setDeletingDomain(null);
 			setFileValue([]);
+			setUploadError(null);
 		};
 
 		document.body.style.overflow = "hidden";
@@ -91,6 +96,7 @@ export function DomainDashboard({ refreshKey }: DomainDashboardProps) {
 		}
 
 		setUploading(true);
+		setUploadError(null);
 		try {
 			const formData = new FormData();
 			formData.set("file", fileValue[0]);
@@ -110,7 +116,9 @@ export function DomainDashboard({ refreshKey }: DomainDashboardProps) {
 			setFileValue([]);
 			toast.success("HTML file updated");
 		} catch (error) {
-			toast.error(error instanceof Error ? error.message : "Failed to upload HTML file");
+			const message = error instanceof Error ? error.message : "Failed to upload HTML file";
+			setUploadError(message);
+			toast.error(message);
 		} finally {
 			setUploading(false);
 		}
@@ -143,11 +151,11 @@ export function DomainDashboard({ refreshKey }: DomainDashboardProps) {
 	}
 
 	return (
-		<section className="mt-8 w-full">
-			<div className="mb-3 flex items-end justify-between gap-3">
+		<section className="mt-10 w-full">
+			<div className="mb-4 flex items-end justify-between gap-3">
 				<div>
-					<p className="text-xs uppercase tracking-widest text-default-500">
-						Your domains
+					<p className="text-xs font-medium uppercase tracking-widest text-default-500">
+						Your sites
 					</p>
 					<h2 className="text-xl font-semibold text-foreground">
 						Domains
@@ -159,15 +167,50 @@ export function DomainDashboard({ refreshKey }: DomainDashboardProps) {
 			</div>
 
 			{domains.length === 0 ? (
-				<div className="rounded-lg border border-dashed border-default-200 bg-default-50/40 px-4 py-8 text-center text-sm text-default-500">
-					No domains yet.
-				</div>
+				<motion.div
+					className="flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-default-200 bg-default-50/40 px-6 py-12 text-center"
+					initial={{ opacity: 0, y: 8 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ duration: 0.3 }}
+				>
+					<div className="flex h-12 w-12 items-center justify-center rounded-full bg-default-100 text-default-500">
+						<svg
+							className="h-6 w-6"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+							strokeWidth={1.5}
+						>
+							<path
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.377 0-4.485-.448-6.324-1.195m15.686 0A11.953 11.953 0 0112 16.5c-2.377 0-4.485-.448-6.324-1.195"
+							/>
+						</svg>
+					</div>
+					<div>
+						<p className="text-base font-medium text-foreground">No sites yet</p>
+						<p className="mt-1 max-w-xs text-sm text-default-500">
+							Claim a subdomain and upload an HTML file to get started.
+						</p>
+					</div>
+					<Button
+						size="sm"
+						color="secondary"
+						variant="flat"
+						onPress={() => {
+							window.scrollTo({ top: 0, behavior: "smooth" });
+						}}
+					>
+						Create your first site
+					</Button>
+				</motion.div>
 			) : (
 				<div className="grid gap-3">
 					{domains.map((hostedDomain) => (
 						<div
 							key={hostedDomain.id}
-							className="flex flex-col gap-3 rounded-lg border border-default-200 bg-default-50/40 p-4 sm:flex-row sm:items-center sm:justify-between"
+							className="flex flex-col gap-3 rounded-xl border border-default-200 bg-default-50/40 p-4 sm:flex-row sm:items-center sm:justify-between"
 						>
 							<div className="min-w-0">
 								<Link
@@ -219,16 +262,17 @@ export function DomainDashboard({ refreshKey }: DomainDashboardProps) {
 				<div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm" role="presentation" onMouseDown={() => {
 					setUploadingDomain(null);
 					setFileValue([]);
+					setUploadError(null);
 				}}>
 					<div
 						aria-labelledby="upload-dialog-title"
 						aria-modal="true"
-						className="w-full max-w-xl overflow-hidden rounded-lg border border-default-200 bg-background shadow-2xl"
+						className="w-full max-w-xl overflow-hidden rounded-xl border border-default-200 bg-background shadow-2xl"
 						role="dialog"
 						onMouseDown={(event) => event.stopPropagation()}
 					>
 						<div className="border-b border-default-200 px-5 py-4">
-							<p className="text-xs uppercase tracking-widest text-default-500">
+							<p className="text-xs font-medium uppercase tracking-widest text-default-500">
 								Replace HTML
 							</p>
 							<h3 id="upload-dialog-title" className="truncate text-lg font-semibold">
@@ -241,6 +285,7 @@ export function DomainDashboard({ refreshKey }: DomainDashboardProps) {
 								onValueChange={setFileValue}
 								maxSize={16 * 1024 * 1024}
 								maxFiles={1}
+								inlineError={uploadError}
 							/>
 						</div>
 						<div className="flex items-center justify-end gap-2 border-t border-default-200 px-5 py-4">
@@ -250,6 +295,7 @@ export function DomainDashboard({ refreshKey }: DomainDashboardProps) {
 								onPress={() => {
 									setUploadingDomain(null);
 									setFileValue([]);
+									setUploadError(null);
 								}}
 							>
 								Cancel
@@ -272,11 +318,11 @@ export function DomainDashboard({ refreshKey }: DomainDashboardProps) {
 					<div
 						aria-labelledby="delete-dialog-title"
 						aria-modal="true"
-						className="w-full max-w-md rounded-lg border border-danger-200 bg-background p-5 shadow-2xl"
+						className="w-full max-w-md rounded-xl border border-danger-200 bg-background p-5 shadow-2xl"
 						role="dialog"
 						onMouseDown={(event) => event.stopPropagation()}
 					>
-						<p className="text-xs uppercase tracking-widest text-danger">
+						<p className="text-xs font-medium uppercase tracking-widest text-danger">
 							Delete domain
 						</p>
 						<h3 id="delete-dialog-title" className="mt-1 text-lg font-semibold">
