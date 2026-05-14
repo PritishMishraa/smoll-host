@@ -30,6 +30,7 @@ export default function DomainName() {
     const [loading, setLoading] = React.useState(false);
     const [refreshKey, setRefreshKey] = React.useState(0);
     const [uploadError, setUploadError] = React.useState<string | null>(null);
+    const domainInputRef = React.useRef<HTMLInputElement>(null);
     const domainCheckTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
     const domainCheckSequence = React.useRef(0);
 
@@ -83,6 +84,16 @@ export default function DomainName() {
         };
     }, []);
 
+    React.useEffect(() => {
+        if (step !== 1 || !isSignedIn || isPending) {
+            return;
+        }
+
+        requestAnimationFrame(() => {
+            domainInputRef.current?.focus();
+        });
+    }, [isPending, isSignedIn, step]);
+
     const handleValueChange = (newValue: string) => {
         if (!isSignedIn) {
             return;
@@ -96,6 +107,9 @@ export default function DomainName() {
     };
 
     const canProceedFromStep1 = domainValue.length >= 3 && !isInvalid && isSignedIn;
+    const isStep1ActionDisabled = isSignedIn
+        ? !canProceedFromStep1 || loading || isPending
+        : loading || isPending;
 
     const handleUpload = async () => {
         if (!isSignedIn) {
@@ -168,6 +182,14 @@ export default function DomainName() {
         setStep(1);
     };
 
+    const focusCreateFlow = () => {
+        setStep(1);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        requestAnimationFrame(() => {
+            domainInputRef.current?.focus();
+        });
+    };
+
     const goBack = () => {
         if (step === 2) {
             setStep(1);
@@ -187,9 +209,6 @@ export default function DomainName() {
                         transition={{ duration: 0.3 }}
                     >
                         <div className="w-full text-center mb-2">
-                            <p className="text-xs font-medium uppercase tracking-widest text-default-500">
-                                Step 1 of 3
-                            </p>
                             <h3 className="mt-1 text-xl font-semibold">
                                 What should we call it?
                             </h3>
@@ -199,6 +218,7 @@ export default function DomainName() {
                         </div>
 
                         <Input
+                            ref={domainInputRef}
                             label="Subdomain"
                             labelPlacement='outside'
                             placeholder="my-awesome-site"
@@ -215,6 +235,12 @@ export default function DomainName() {
                             isInvalid={isInvalid}
                             color={domainValue && !isInvalid ? 'success' : 'default'}
                             isDisabled={!isSignedIn || isPending}
+                            onKeyDown={(event) => {
+                                if (event.key === "Enter") {
+                                    event.preventDefault();
+                                    void handleUpload();
+                                }
+                            }}
                             classNames={{
                                 input: "font-medium",
                             }}
@@ -222,7 +248,7 @@ export default function DomainName() {
 
                         <Button
                             isLoading={loading || isPending}
-                            isDisabled={!canProceedFromStep1 || loading || isPending}
+                            isDisabled={isStep1ActionDisabled}
                             className='w-full max-w-sm'
                             color='secondary'
                             onPress={handleUpload}
@@ -247,9 +273,6 @@ export default function DomainName() {
                         transition={{ duration: 0.3 }}
                     >
                         <div className="w-full text-center mb-2">
-                            <p className="text-xs font-medium uppercase tracking-widest text-default-500">
-                                Step 2 of 3
-                            </p>
                             <h3 className="mt-1 text-xl font-semibold">
                                 Upload your HTML file
                             </h3>
@@ -267,6 +290,7 @@ export default function DomainName() {
                                 disabled={!isSignedIn || isPending}
                                 disabledLabel={isSignedIn ? "HTML selected" : "Sign in to upload HTML"}
                                 inlineError={uploadError}
+                                autoFocus
                             />
                         </div>
 
@@ -320,7 +344,7 @@ export default function DomainName() {
                 )}
             </div>
 
-            <DomainDashboard refreshKey={refreshKey} />
+            <DomainDashboard refreshKey={refreshKey} onCreateSite={focusCreateFlow} />
         </div>
     )
 }

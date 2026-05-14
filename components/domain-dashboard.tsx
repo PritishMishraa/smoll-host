@@ -19,9 +19,19 @@ type HostedDomain = Awaited<ReturnType<typeof listDomains>>[number];
 
 interface DomainDashboardProps {
 	refreshKey: number;
+	onCreateSite: () => void;
 }
 
-export function DomainDashboard({ refreshKey }: DomainDashboardProps) {
+const focusableSelector = [
+	"a[href]",
+	"button:not([disabled])",
+	"input:not([disabled])",
+	"select:not([disabled])",
+	"textarea:not([disabled])",
+	'[tabindex]:not([tabindex="-1"])',
+].join(",");
+
+export function DomainDashboard({ refreshKey, onCreateSite }: DomainDashboardProps) {
 	const { data: session, isPending } = authClient.useSession();
 	const [domains, setDomains] = React.useState<HostedDomain[]>([]);
 	const [loading, setLoading] = React.useState(false);
@@ -33,6 +43,7 @@ export function DomainDashboard({ refreshKey }: DomainDashboardProps) {
 	const [uploadError, setUploadError] = React.useState<string | null>(null);
 	const uploadCancelRef = React.useRef<HTMLButtonElement>(null);
 	const deleteCancelRef = React.useRef<HTMLButtonElement>(null);
+	const previousFocusRef = React.useRef<HTMLElement | null>(null);
 
 	const refreshDomains = React.useCallback(async () => {
 		if (!session?.user) {
@@ -55,10 +66,36 @@ export function DomainDashboard({ refreshKey }: DomainDashboardProps) {
 	}, [refreshDomains, refreshKey]);
 
 	const openUpload = (hostedDomain: HostedDomain) => {
+		previousFocusRef.current = document.activeElement instanceof HTMLElement
+			? document.activeElement
+			: null;
 		setFileValue([]);
 		setUploadError(null);
 		setUploadingDomain(hostedDomain);
 	};
+
+	const openDelete = (hostedDomain: HostedDomain) => {
+		previousFocusRef.current = document.activeElement instanceof HTMLElement
+			? document.activeElement
+			: null;
+		setDeletingDomain(hostedDomain);
+	};
+
+	const closeDialog = React.useCallback(() => {
+		setUploadingDomain(null);
+		setDeletingDomain(null);
+		setFileValue([]);
+		setUploadError(null);
+
+		const previousFocus = previousFocusRef.current;
+		previousFocusRef.current = null;
+
+		requestAnimationFrame(() => {
+			if (previousFocus && document.contains(previousFocus)) {
+				previousFocus.focus();
+			}
+		});
+	}, []);
 
 	React.useEffect(() => {
 		if (!uploadingDomain && !deletingDomain) {
@@ -66,28 +103,56 @@ export function DomainDashboard({ refreshKey }: DomainDashboardProps) {
 		}
 
 		const onKeyDown = (event: KeyboardEvent) => {
-			if (event.key !== "Escape") {
+			if (event.key === "Escape") {
+				event.preventDefault();
+				closeDialog();
 				return;
 			}
 
-			setUploadingDomain(null);
-			setDeletingDomain(null);
-			setFileValue([]);
-			setUploadError(null);
+			if (event.key !== "Tab") {
+				return;
+			}
+
+			const dialog = document.getElementById(uploadingDomain ? "upload-dialog" : "delete-dialog");
+			if (!dialog) {
+				return;
+			}
+
+			const focusableElements = Array.from(
+				dialog.querySelectorAll<HTMLElement>(focusableSelector)
+			).filter((element) => element.offsetParent !== null);
+
+			if (focusableElements.length === 0) {
+				event.preventDefault();
+				return;
+			}
+
+			const firstElement = focusableElements[0];
+			const lastElement = focusableElements[focusableElements.length - 1];
+
+			if (event.shiftKey && document.activeElement === firstElement) {
+				event.preventDefault();
+				lastElement.focus();
+			} else if (!event.shiftKey && document.activeElement === lastElement) {
+				event.preventDefault();
+				firstElement.focus();
+			}
 		};
 
 		document.body.style.overflow = "hidden";
 		document.addEventListener("keydown", onKeyDown);
 
 		requestAnimationFrame(() => {
-			(uploadingDomain ? uploadCancelRef : deleteCancelRef).current?.focus();
+			if (deletingDomain) {
+				deleteCancelRef.current?.focus();
+			}
 		});
 
 		return () => {
 			document.body.style.overflow = "";
 			document.removeEventListener("keydown", onKeyDown);
 		};
-	}, [deletingDomain, uploadingDomain]);
+	}, [closeDialog, deletingDomain, uploadingDomain]);
 
 	const replaceHtml = async () => {
 		if (!uploadingDomain || fileValue.length === 0) {
@@ -112,7 +177,7 @@ export function DomainDashboard({ refreshKey }: DomainDashboardProps) {
 			}
 
 			await refreshDomains();
-			setUploadingDomain(null);
+			closeDialog();
 			setFileValue([]);
 			toast.success("HTML file updated");
 		} catch (error) {
@@ -137,7 +202,7 @@ export function DomainDashboard({ refreshKey }: DomainDashboardProps) {
 			}
 
 			await refreshDomains();
-			setDeletingDomain(null);
+			closeDialog();
 			toast.success("Domain deleted");
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : "Failed to delete domain");
@@ -198,9 +263,7 @@ export function DomainDashboard({ refreshKey }: DomainDashboardProps) {
 						size="sm"
 						color="secondary"
 						variant="flat"
-						onPress={() => {
-							window.scrollTo({ top: 0, behavior: "smooth" });
-						}}
+						onPress={onCreateSite}
 					>
 						Create your first site
 					</Button>
@@ -248,7 +311,7 @@ export function DomainDashboard({ refreshKey }: DomainDashboardProps) {
 									color="danger"
 									size="sm"
 									variant="flat"
-									onPress={() => setDeletingDomain(hostedDomain)}
+									onPress={() => openDelete(hostedDomain)}
 								>
 									Delete
 								</Button>
@@ -259,14 +322,11 @@ export function DomainDashboard({ refreshKey }: DomainDashboardProps) {
 			)}
 
 			{uploadingDomain && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm" role="presentation" onMouseDown={() => {
-					setUploadingDomain(null);
-					setFileValue([]);
-					setUploadError(null);
-				}}>
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm" role="presentation" onMouseDown={closeDialog}>
 					<div
 						aria-labelledby="upload-dialog-title"
 						aria-modal="true"
+						id="upload-dialog"
 						className="w-full max-w-xl overflow-hidden rounded-xl border border-default-200 bg-background shadow-2xl"
 						role="dialog"
 						onMouseDown={(event) => event.stopPropagation()}
@@ -286,17 +346,14 @@ export function DomainDashboard({ refreshKey }: DomainDashboardProps) {
 								maxSize={16 * 1024 * 1024}
 								maxFiles={1}
 								inlineError={uploadError}
+								autoFocus
 							/>
 						</div>
 						<div className="flex items-center justify-end gap-2 border-t border-default-200 px-5 py-4">
 							<Button
 								ref={uploadCancelRef}
 								variant="flat"
-								onPress={() => {
-									setUploadingDomain(null);
-									setFileValue([]);
-									setUploadError(null);
-								}}
+								onPress={closeDialog}
 							>
 								Cancel
 							</Button>
@@ -314,10 +371,11 @@ export function DomainDashboard({ refreshKey }: DomainDashboardProps) {
 			)}
 
 			{deletingDomain && (
-				<div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm" role="presentation" onMouseDown={() => setDeletingDomain(null)}>
+				<div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur-sm" role="presentation" onMouseDown={closeDialog}>
 					<div
 						aria-labelledby="delete-dialog-title"
 						aria-modal="true"
+						id="delete-dialog"
 						className="w-full max-w-md rounded-xl border border-danger-200 bg-background p-5 shadow-2xl"
 						role="dialog"
 						onMouseDown={(event) => event.stopPropagation()}
@@ -332,7 +390,7 @@ export function DomainDashboard({ refreshKey }: DomainDashboardProps) {
 							This removes the domain and deletes its uploaded HTML file.
 						</p>
 						<div className="mt-5 flex justify-end gap-2">
-							<Button ref={deleteCancelRef} variant="flat" onPress={() => setDeletingDomain(null)}>
+							<Button ref={deleteCancelRef} variant="flat" onPress={closeDialog}>
 								Cancel
 							</Button>
 							<Button color="danger" isLoading={deleting} onPress={confirmDelete}>
