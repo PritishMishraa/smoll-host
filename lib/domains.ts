@@ -7,7 +7,7 @@ import { db } from "@/db";
 import { domain } from "@/db/schema";
 import { cacheDomain, isDomainCached, uncacheDomain } from "@/lib/domain-cache";
 import { createDomainWorkflows } from "@/lib/domain-workflows";
-import { deleteDomainFiles, uploadDomainHtml } from "@/lib/storage";
+import { deleteDomainFiles, downloadDomainHtml, uploadDomainHtml } from "@/lib/storage";
 import { domainNameSchema } from "@/lib/validation";
 
 export async function isDomainAvailable(value: string) {
@@ -42,6 +42,13 @@ export async function listDomainsForUser(userId: string) {
 export async function uploadHtmlForDomain(value: string, userId: string, file: File) {
 	const parsedDomain = domainNameSchema.parse(value);
 	await domainWorkflows.upload(parsedDomain, userId, file);
+}
+
+export async function downloadHtmlForDomain(value: string, userId: string) {
+	const parsedDomain = domainNameSchema.parse(value);
+	await requireOwnedDomain(parsedDomain, userId);
+
+	return downloadDomainHtml(parsedDomain);
 }
 
 export async function markDomainPublishedForUser(value: string, userId: string) {

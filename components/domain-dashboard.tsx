@@ -300,6 +300,15 @@ export function DomainDashboard({ refreshKey, onCreateSite }: DomainDashboardPro
 									Open
 								</Button>
 								<Button
+									as={Link}
+									href={`/api/domains/${hostedDomain.name}/download`}
+									isDisabled={!hostedDomain.publishedAt}
+									size="sm"
+									variant="flat"
+								>
+									Download
+								</Button>
+								<Button
 									color="secondary"
 									size="sm"
 									variant="flat"

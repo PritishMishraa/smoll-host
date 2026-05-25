@@ -242,7 +242,7 @@ export default function DomainName() {
                                 }
                             }}
                             classNames={{
-                                input: "font-medium",
+                                input: "font-medium placeholder:text-default-400 placeholder:text-sm placeholder:font-normal",
                             }}
                         />
 
