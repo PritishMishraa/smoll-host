@@ -1,0 +1,25 @@
+{
+  "name": "@smoll-host/cli",
+  "version": "0.1.0",
+  "description": "Publish self-contained HTML documents to smoll.host",
+  "type": "module",
+  "bin": {
+    "smoll": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.0",
+    "typescript": "^5.0.4"
+  },
+  "license": "MIT"
+}
