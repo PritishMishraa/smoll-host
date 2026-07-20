@@ -4,7 +4,7 @@ import { extname, resolve } from "node:path";
 import { SmollApiClient, SmollApiError } from "./client.js";
 import { loadConfig, saveConfig } from "./config.js";
 
-const DEFAULT_API_URL = "https://smoll.host";
+const DEFAULT_API_URL = "https://smoll-host.vercel.app";
 const MAX_HTML_BYTES = 16 * 1024 * 1024;
 
 export interface CliIo {
@@ -36,7 +36,7 @@ export async function runCli(argv: string[], io: CliIo = defaultIo): Promise<num
 	const parsed = parseArgs(argv);
 
 	if (parsed.flags.version) {
-		io.stdout("0.1.0\n");
+		io.stdout("0.1.1\n");
 		return 0;
 	}
 
@@ -424,7 +424,7 @@ Usage:
 
 Environment:
   SMOLL_HOST_TOKEN     API key generated in the smoll.host dashboard
-  SMOLL_HOST_API_URL   API origin (default: https://smoll.host)
+  SMOLL_HOST_API_URL   API origin (default: https://smoll-host.vercel.app)
   SMOLL_CONFIG_DIR     Override the local config directory
 `;
 }

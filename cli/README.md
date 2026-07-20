@@ -16,3 +16,4 @@ smoll deploy ./index.html --site my-docs --json
 ```
 
 Set `SMOLL_HOST_API_URL` when using a self-hosted smoll.host server.
+The default hosted API is `https://smoll-host.vercel.app`.
