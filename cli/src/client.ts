@@ -73,8 +73,8 @@ export class SmollApiClient {
 	}
 
 	async download(site: string) {
-		const response = await this.fetchImpl(
-			`${this.baseUrl}/api/v1/sites/${encodeURIComponent(site)}/content`,
+		const response = await this.fetch(
+			`/api/v1/sites/${encodeURIComponent(site)}/content`,
 			{
 				headers: this.headers(),
 			}
@@ -95,7 +95,7 @@ export class SmollApiClient {
 	}
 
 	private async request<T>(path: string, init: RequestInit = {}) {
-		const response = await this.fetchImpl(`${this.baseUrl}${path}`, {
+		const response = await this.fetch(path, {
 			...init,
 			headers: {
 				...this.headers(),
@@ -110,11 +110,26 @@ export class SmollApiClient {
 		return (await response.json()) as T;
 	}
 
+	private async fetch(path: string, init: RequestInit) {
+		try {
+			return await this.fetchImpl(`${this.baseUrl}${path}`, init);
+		} catch (error) {
+			const detail =
+				error instanceof Error && error.message ? ` (${error.message})` : "";
+
+			throw new SmollApiError(
+				0,
+				"NETWORK_ERROR",
+				`Could not reach ${this.baseUrl}${detail}. Check your network or override the API origin with --api-url.`
+			);
+		}
+	}
+
 	private headers() {
 		return {
 			Accept: "application/json",
 			Authorization: `Bearer ${this.token}`,
-			"User-Agent": "@smoll-host/cli/0.1.0",
+			"User-Agent": "@smoll-host/cli/0.1.1",
 		};
 	}
 

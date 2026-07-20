@@ -70,6 +70,52 @@ describe("smoll CLI", () => {
 		expect(stderr).toEqual([]);
 	});
 
+	it("uses the deployed application as the default API origin", async () => {
+		const fetchImpl = vi.fn(async () =>
+			jsonResponse({
+				ok: true,
+				sites: [],
+			})
+		);
+		const io: CliIo = {
+			env: {
+				NODE_ENV: "test",
+				SMOLL_HOST_TOKEN: "smoll_test_token_that_is_long_enough",
+				SMOLL_CONFIG_DIR: "/tmp/smoll-cli-missing-config",
+			},
+			stdout: vi.fn(),
+			stderr: vi.fn(),
+			readStdin: async () => new Uint8Array(),
+			fetchImpl: fetchImpl as typeof fetch,
+		};
+
+		const exitCode = await runCli(["sites", "list", "--json"], io);
+
+		expect(exitCode).toBe(0);
+		expect(fetchImpl).toHaveBeenCalledWith(
+			"https://smoll-host.vercel.app/api/v1/sites",
+			expect.any(Object)
+		);
+	});
+
+	it("reports the unreachable API origin for network errors", async () => {
+		const client = new SmollApiClient(
+			"https://unreachable.test",
+			"smoll_test",
+			async () => {
+				throw new TypeError("fetch failed");
+			}
+		);
+
+		await expect(client.listSites()).rejects.toEqual(
+			new SmollApiError(
+				0,
+				"NETWORK_ERROR",
+				"Could not reach https://unreachable.test (fetch failed). Check your network or override the API origin with --api-url."
+			)
+		);
+	});
+
 	it("preserves structured API errors", async () => {
 		const client = new SmollApiClient(
 			"https://api.test",

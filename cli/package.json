@@ -1,6 +1,6 @@
 {
   "name": "@smoll-host/cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Publish self-contained HTML documents to smoll.host",
   "type": "module",
   "bin": {
