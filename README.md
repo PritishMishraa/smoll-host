@@ -2,58 +2,6 @@
 
 Host a self-contained HTML document from the web, a terminal, or an AI agent.
 
-## CLI
-
-Build the CLI from this repository:
-
-```bash
-pnpm install
-pnpm cli:build
-node cli/dist/cli.js --help
-```
-
-Create an API key in the **CLI API keys** section of the signed-in dashboard, then configure it:
-
-```bash
-export SMOLL_HOST_TOKEN="smoll_..."
-```
-
-Publish a local HTML document:
-
-```bash
-node cli/dist/cli.js deploy ./index.html --site my-docs
-```
-
-AI agents and CI jobs should use stable JSON output:
-
-```bash
-node cli/dist/cli.js deploy ./index.html --site my-docs --json
-```
-
-Documents can also be streamed over stdin:
-
-```bash
-generate-docs | node cli/dist/cli.js deploy - --site my-docs --json
-```
-
-Other commands:
-
-```bash
-smoll sites list --json
-smoll sites download my-docs --output ./index.html
-smoll sites delete my-docs --yes --json
-smoll auth set-token "smoll_..."
-smoll auth status --json
-```
-
-The CLI requires Node.js 20 or newer. It accepts one self-contained `.html` or `.htm` document up to 16 MB. API keys are hashed at rest, expire after 90 days, are rate limited, and can only operate on sites owned by their user.
-
-The CLI connects to `https://smoll-host.vercel.app` by default. Set
-`SMOLL_HOST_API_URL` or pass `--api-url` only when using a local or self-hosted
-server.
-
-The machine-readable API contract is available at [`/openapi.json`](public/openapi.json).
-
 > [!NOTE]  
 > The hosted content is currently displayed through a subdomain of [pritish.in](https://pritish.in). This is achieved using a reverse proxy written in Go, available at [this GitHub repo](https://github.com/PritishMishraa/go-reverse-proxy).
 
@@ -167,6 +115,55 @@ public-hoist-pattern[]=*@nextui-org/*
 ```
 
 After modifying the `.npmrc` file, you need to run `pnpm install` again to ensure that the dependencies are installed correctly.
+
+## CLI
+
+Build the CLI from this repository:
+
+```bash
+pnpm install
+pnpm cli:build
+node cli/dist/cli.js --help
+```
+
+Create an API key in the **CLI API keys** section of the signed-in dashboard, then configure it:
+
+```bash
+export SMOLL_HOST_TOKEN="smoll_..."
+export SMOLL_HOST_API_URL="http://localhost:3000" # omit in production
+```
+
+Publish a local HTML document:
+
+```bash
+node cli/dist/cli.js deploy ./index.html --site my-docs
+```
+
+AI agents and CI jobs should use stable JSON output:
+
+```bash
+node cli/dist/cli.js deploy ./index.html --site my-docs --json
+```
+
+Documents can also be streamed over stdin:
+
+```bash
+generate-docs | node cli/dist/cli.js deploy - --site my-docs --json
+```
+
+Other commands:
+
+```bash
+smoll sites list --json
+smoll sites download my-docs --output ./index.html
+smoll sites delete my-docs --yes --json
+smoll auth set-token "smoll_..."
+smoll auth status --json
+```
+
+The CLI requires Node.js 20 or newer. It accepts one self-contained `.html` or `.htm` document up to 16 MB. API keys are hashed at rest, expire after 90 days, are rate limited, and can only operate on sites owned by their user.
+
+The machine-readable API contract is available at [`/openapi.json`](public/openapi.json).
 
 ## License
 
