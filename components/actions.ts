@@ -8,7 +8,7 @@ import {
 	isDomainAvailable,
 	listDomainsForUser,
 } from "@/lib/domains";
-import { auth } from "@/lib/auth";
+import { getAuth } from "@/lib/auth";
 
 export async function checkDomain(value: string) {
 	return isDomainAvailable(value);
@@ -40,7 +40,7 @@ export async function deleteDomain(value: string) {
 }
 
 async function requireUserId() {
-	const session = await auth.api.getSession({
+	const session = await getAuth().api.getSession({
 		headers: headers(),
 	});
 
