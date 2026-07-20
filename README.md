@@ -16,7 +16,6 @@ Create an API key in the **CLI API keys** section of the signed-in dashboard, th
 
 ```bash
 export SMOLL_HOST_TOKEN="smoll_..."
-export SMOLL_HOST_API_URL="http://localhost:3000" # omit in production
 ```
 
 Publish a local HTML document:
@@ -48,6 +47,10 @@ smoll auth status --json
 ```
 
 The CLI requires Node.js 20 or newer. It accepts one self-contained `.html` or `.htm` document up to 16 MB. API keys are hashed at rest, expire after 90 days, are rate limited, and can only operate on sites owned by their user.
+
+The CLI connects to `https://smoll-host.vercel.app` by default. Set
+`SMOLL_HOST_API_URL` or pass `--api-url` only when using a local or self-hosted
+server.
 
 The machine-readable API contract is available at [`/openapi.json`](public/openapi.json).
 
