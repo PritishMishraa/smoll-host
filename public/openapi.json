@@ -1,0 +1,302 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "smoll.host Agent API",
+    "version": "1.0.0",
+    "description": "Create, replace, inspect, download, and delete self-contained HTML sites."
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "security": [
+    {
+      "apiKey": []
+    }
+  ],
+  "paths": {
+    "/api/v1/sites": {
+      "get": {
+        "operationId": "listSites",
+        "summary": "List sites owned by the API-key user",
+        "responses": {
+          "200": {
+            "description": "Site list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "ok",
+                    "sites"
+                  ],
+                  "properties": {
+                    "ok": {
+                      "const": true
+                    },
+                    "sites": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Site"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/ApiError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        }
+      }
+    },
+    "/api/v1/sites/{site}": {
+      "parameters": [
+        {
+          "name": "site",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "pattern": "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getSite",
+        "summary": "Get site metadata",
+        "responses": {
+          "200": {
+            "description": "Site metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "const": true
+                    },
+                    "site": {
+                      "$ref": "#/components/schemas/Site"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        }
+      },
+      "put": {
+        "operationId": "publishSite",
+        "summary": "Create or replace a site",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "text/html": {
+              "schema": {
+                "type": "string",
+                "contentMediaType": "text/html",
+                "maxLength": 16777216
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Published"
+          },
+          "201": {
+            "$ref": "#/components/responses/Published"
+          },
+          "409": {
+            "$ref": "#/components/responses/ApiError"
+          },
+          "413": {
+            "$ref": "#/components/responses/ApiError"
+          },
+          "415": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteSite",
+        "summary": "Delete a site and its HTML",
+        "responses": {
+          "200": {
+            "description": "Site deleted"
+          },
+          "404": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        }
+      }
+    },
+    "/api/v1/sites/{site}/content": {
+      "parameters": [
+        {
+          "name": "site",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "downloadSite",
+        "summary": "Download a site's HTML document",
+        "responses": {
+          "200": {
+            "description": "HTML document",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/ApiError"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "smoll_ API key",
+        "description": "Pass the dashboard-generated key as Authorization: Bearer smoll_..."
+      }
+    },
+    "schemas": {
+      "Site": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "url",
+          "createdAt",
+          "updatedAt",
+          "publishedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "publishedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "requestId"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "responses": {
+      "ApiError": {
+        "description": "Structured API error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "ok",
+                "error"
+              ],
+              "properties": {
+                "ok": {
+                  "const": false
+                },
+                "error": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Published": {
+        "description": "Site created or updated",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "required": [
+                "ok",
+                "created",
+                "bytes",
+                "sha256",
+                "site"
+              ],
+              "properties": {
+                "ok": {
+                  "const": true
+                },
+                "created": {
+                  "type": "boolean"
+                },
+                "bytes": {
+                  "type": "integer"
+                },
+                "sha256": {
+                  "type": "string"
+                },
+                "site": {
+                  "$ref": "#/components/schemas/Site"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
