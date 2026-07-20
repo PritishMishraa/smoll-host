@@ -12,6 +12,7 @@ import { getPublicDomainUrl, siteConfig } from '@/config/site';
 import { DeployLoading } from './deploy-loading';
 import { DeploySuccess } from './deploy-success';
 import { motion } from "framer-motion";
+import { ApiKeyManager } from "./api-key-manager";
 
 const openInNewTab = (url: string) => {
     window.open(url, '_blank', 'noopener,noreferrer');
@@ -345,6 +346,7 @@ export default function DomainName() {
             </div>
 
             <DomainDashboard refreshKey={refreshKey} onCreateSite={focusCreateFlow} />
+            <ApiKeyManager />
         </div>
     )
 }

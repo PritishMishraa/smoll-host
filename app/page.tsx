@@ -7,7 +7,7 @@ export default function Home() {
 			<div className="flex max-w-lg flex-col items-center gap-3 text-center">
 				<h1 className={title({ color: "violet" })}>smoll.host</h1>
 				<h2 className={subtitle({ class: "mt-0 text-default-500" })}>
-					Your HTML live in 30 seconds. No config, no CLI, just a subdomain and a file.
+					Your HTML live in 30 seconds—from the web, your terminal, or an AI agent.
 				</h2>
 			</div>
 
