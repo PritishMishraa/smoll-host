@@ -20,11 +20,20 @@ export const siteConfig: SiteConfig = {
 	name: "smoll.host",
 	description: "Host small static sites on pritish.in subdomains.",
 	publicHost: process.env.NEXT_PUBLIC_PUBLIC_HOST ?? "pritish.in",
-	navItems: [],
+	navItems: [
+		{
+			label: "CLI",
+			href: "/cli",
+		},
+	],
 	navMenuItems: [
 		{
 			label: "Domains",
 			href: "/",
+		},
+		{
+			label: "CLI",
+			href: "/cli",
 		},
 		{
 			label: "GitHub",

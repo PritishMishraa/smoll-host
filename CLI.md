@@ -29,25 +29,27 @@ This installation belongs to the active NVM Node.js version. Switching Node.js v
 
 - Node.js 20 or newer
 - A running smoll.host server
-- A dashboard-generated API key
+- An API key from the [CLI & agents page](https://smoll-host.vercel.app/cli)
 - One self-contained `.html` or `.htm` document, no larger than 16 MB
+
+## Install with curl
+
+Until the package is published to npm, the installer downloads the repository, builds the CLI from source, and installs it globally:
+
+```bash
+curl -fsSL https://smoll-host.vercel.app/install.sh | bash
+```
+
+To update an existing installation, run the same command again.
 
 ## Install from this repository
 
-Until the package is published to npm, build and install it from the repository:
+Alternatively, build and install it yourself:
 
 ```bash
 git clone https://github.com/PritishMishraa/smoll-host.git
 cd smoll-host
 
-pnpm install
-pnpm cli:build
-npm install --global ./cli
-```
-
-To update an existing local installation after pulling changes:
-
-```bash
 pnpm install
 pnpm cli:build
 npm install --global ./cli
@@ -71,13 +73,12 @@ The package is configured for npm distribution, but it has not been published ye
 
 ## Create an API key
 
-1. Sign in to the smoll.host dashboard.
-2. Open **CLI API keys**.
-3. Give the key a recognizable name.
-4. Select **Create API key**.
-5. Copy the `smoll_...` value immediately. It is shown only once.
+1. Sign in on the [CLI & agents page](https://smoll-host.vercel.app/cli).
+2. Give the key a recognizable name.
+3. Select **Create API key**.
+4. Copy the `smoll_...` value immediately. It is shown only once.
 
-Keys are hashed at rest, expire after 90 days, and are restricted to the sites owned by their user.
+Keys are hashed at rest, expire after 90 days, and are restricted to the sites owned by their user. The same page includes a copy-paste prompt you can give your AI agent so it uses the CLI correctly.
 
 ## Configure authentication
 

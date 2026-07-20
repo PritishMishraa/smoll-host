@@ -157,10 +157,10 @@ importers:
   cli:
     devDependencies:
       '@types/node':
-        specifier: ^20.19.0
+        specifier: 20.19.43
         version: 20.19.43
       typescript:
-        specifier: ^5.0.4
+        specifier: 5.0.4
         version: 5.0.4
 
 packages:

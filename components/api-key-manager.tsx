@@ -2,6 +2,7 @@
 
 import { Button } from "@nextui-org/button";
 import { Input } from "@nextui-org/input";
+import clsx from "clsx";
 import * as React from "react";
 import { toast } from "sonner";
 
@@ -16,7 +17,11 @@ interface ManagedApiKey {
 	lastRequest: Date | string | null;
 }
 
-export function ApiKeyManager() {
+interface ApiKeyManagerProps {
+	className?: string;
+}
+
+export function ApiKeyManager({ className }: ApiKeyManagerProps) {
 	const { data: session } = authClient.useSession();
 	const [keys, setKeys] = React.useState<ManagedApiKey[]>([]);
 	const [name, setName] = React.useState("CLI");
@@ -118,7 +123,7 @@ export function ApiKeyManager() {
 	}
 
 	return (
-		<section className="mt-10 w-full" aria-labelledby="api-key-heading">
+		<section className={clsx("mt-10 w-full", className)} aria-labelledby="api-key-heading">
 			<div className="mb-4">
 				<p className="text-xs font-medium uppercase tracking-widest text-default-500">
 					Agent access

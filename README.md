@@ -118,7 +118,26 @@ After modifying the `.npmrc` file, you need to run `pnpm install` again to ensur
 
 ## CLI
 
-Build the CLI from this repository:
+Install the CLI (requires Node.js 20 or newer):
+
+```bash
+curl -fsSL https://smoll-host.vercel.app/install.sh | bash
+```
+
+Create an API key on the [CLI & agents page](https://smoll-host.vercel.app/cli) — it also has a copy-paste prompt you can hand to your AI agent. Then configure the CLI:
+
+```bash
+smoll auth set-token "smoll_..."
+```
+
+For agents and CI, prefer the environment:
+
+```bash
+export SMOLL_HOST_TOKEN="smoll_..."
+export SMOLL_HOST_API_URL="http://localhost:3000" # omit in production
+```
+
+To build the CLI from this repository instead:
 
 ```bash
 pnpm install
@@ -126,29 +145,22 @@ pnpm cli:build
 node cli/dist/cli.js --help
 ```
 
-Create an API key in the **CLI API keys** section of the signed-in dashboard, then configure it:
-
-```bash
-export SMOLL_HOST_TOKEN="smoll_..."
-export SMOLL_HOST_API_URL="http://localhost:3000" # omit in production
-```
-
 Publish a local HTML document:
 
 ```bash
-node cli/dist/cli.js deploy ./index.html --site my-docs
+smoll deploy ./index.html --site my-docs
 ```
 
 AI agents and CI jobs should use stable JSON output:
 
 ```bash
-node cli/dist/cli.js deploy ./index.html --site my-docs --json
+smoll deploy ./index.html --site my-docs --json
 ```
 
 Documents can also be streamed over stdin:
 
 ```bash
-generate-docs | node cli/dist/cli.js deploy - --site my-docs --json
+generate-docs | smoll deploy - --site my-docs --json
 ```
 
 Other commands:
